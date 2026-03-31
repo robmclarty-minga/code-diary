@@ -1,0 +1,513 @@
+{
+  "projectRoot": "../..",
+  "specRef": "spec.md",
+  "planRef": "plan.md",
+  "guidelinesRef": "../guidelines.md",
+  "createdAt": "2026-03-30T00:00:00.000Z",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Project scaffold and types",
+      "description": "Initialize the project with package.json, tsconfig.json, vitest config, and all shared TypeScript types. Create empty module stubs so the project typechecks.",
+      "requiresBrowserTest": false,
+      "tasks": [
+        {
+          "id": "phase-1-task-1",
+          "title": "Create package.json and tsconfig.json",
+          "description": "Create package.json with name \"code-diary\", type \"module\", bin field pointing to \"./dist/index.js\", engines >=18, zero dependencies, devDependencies for typescript, vitest, and @vitest/coverage-v8. Add scripts: build (tsc), typecheck (tsc --noEmit), test (vitest run). Create tsconfig.json with strict: true, noUncheckedIndexedAccess: true, module: nodenext, moduleResolution: nodenext, target: ES2022, outDir: dist, rootDir: src, declaration: true, esModuleInterop: true.",
+          "dependsOn": [],
+          "specSections": [
+            "§9"
+          ],
+          "targetPaths": [
+            "package.json",
+            "tsconfig.json"
+          ],
+          "acceptanceCriteria": [
+            "package.json exists with type module and bin field",
+            "tsconfig.json has strict and noUncheckedIndexedAccess enabled",
+            "npm install succeeds"
+          ],
+          "subAgentType": "scaffold",
+          "status": "pending"
+        },
+        {
+          "id": "phase-1-task-2",
+          "title": "Create vitest.config.ts and .gitignore",
+          "description": "Create vitest.config.ts with v8 coverage provider, excluding dist/**, test/**, and src/types/** from coverage. Create .gitignore excluding node_modules but NOT dist (dist is committed per guidelines).",
+          "dependsOn": [
+            "phase-1-task-1"
+          ],
+          "specSections": [
+            "§8"
+          ],
+          "targetPaths": [
+            "vitest.config.ts",
+            ".gitignore"
+          ],
+          "acceptanceCriteria": [
+            "vitest.config.ts exports a valid config with v8 coverage provider",
+            "node_modules is in .gitignore",
+            "dist is NOT in .gitignore"
+          ],
+          "subAgentType": "scaffold",
+          "status": "pending"
+        },
+        {
+          "id": "phase-1-task-3",
+          "title": "Define all shared types in types/diary.ts",
+          "description": "Create src/types/diary.ts with all type definitions from spec §4: Commit (sha, subject, body, author, timestamp as Date, filesChanged as FileStat[], insertions, deletions), FileStat (path, insertions, deletions), CategorizedCommit (extends Commit with category, tilItems as string[], daySegment), CommitCategory as a union type of 'feat'|'fix'|'refactor'|'docs'|'chore'|'test'|'style'|'perf'|'build'|'ci'|'other', DaySegment as 'morning'|'afternoon'|'evening'|'night', RepoEntry (repoPath, repoName, commits as CategorizedCommit[]), TilItem (text, repoName, sha), DiaryEntry (date as string YYYY-MM-DD, repos as RepoEntry[], tilItems as TilItem[]). Use export type for all. Named exports only, no default exports.",
+          "dependsOn": [
+            "phase-1-task-1"
+          ],
+          "specSections": [
+            "§4"
+          ],
+          "targetPaths": [
+            "src/types/diary.ts"
+          ],
+          "acceptanceCriteria": [
+            "All types from spec §4 are defined",
+            "All exports use export type",
+            "No default exports",
+            "npm run typecheck passes"
+          ],
+          "subAgentType": "implement",
+          "status": "pending"
+        },
+        {
+          "id": "phase-1-task-4",
+          "title": "Create module stubs with correct exports",
+          "description": "Create stub files for src/git.ts, src/categorize.ts, src/markdown.ts, src/fileIO.ts, src/cli.ts, and src/index.ts. Each stub should export the functions specified in the plan with placeholder implementations that throw 'Not implemented'. git.ts exports readGitLog(repoPath: string, date: string): string and parseGitLog(raw: string): Commit[]. categorize.ts exports categorizeCommit, extractTilItems, assignDaySegment, buildRepoEntry, buildDiaryEntry. markdown.ts exports formatDiaryEntry, findExistingEntry, replaceEntry, appendEntry. fileIO.ts exports readFile, writeFile, fileExists. cli.ts exports parseArgs, run. index.ts imports and calls run(). All imports use .js extensions. src/index.ts must start with #!/usr/bin/env node shebang.",
+          "dependsOn": [
+            "phase-1-task-3"
+          ],
+          "specSections": [
+            "§2",
+            "§5"
+          ],
+          "targetPaths": [
+            "src/git.ts",
+            "src/categorize.ts",
+            "src/markdown.ts",
+            "src/fileIO.ts",
+            "src/cli.ts",
+            "src/index.ts"
+          ],
+          "acceptanceCriteria": [
+            "All six source files exist with correct named exports",
+            "All relative imports use .js extensions",
+            "npm run typecheck passes",
+            "src/index.ts has shebang line"
+          ],
+          "subAgentType": "scaffold",
+          "status": "pending"
+        },
+        {
+          "id": "phase-1-task-5",
+          "title": "Create test fixture files",
+          "description": "Create test/fixtures/gitLog.txt with a raw git log string containing three commits: one feat commit with a TIL item in the body, one fix commit with a non-UTC offset (+0530), and one commit with no conventional prefix (category 'other'). Use the COMMIT_SEPARATOR (---COMMIT---) and BODY_END (---BODY_END---) delimiters matching the format string from the plan. Include --stat output after each commit block. Create test/fixtures/diaryMonth.md with a monthly diary file containing the top heading '# Code Diary — 2026-03' and two existing daily entries (2026-03-28 and 2026-03-29) separated by horizontal rules, following the format from spec §8 BR-8.",
+          "dependsOn": [
+            "phase-1-task-1"
+          ],
+          "specSections": [
+            "§8"
+          ],
+          "targetPaths": [
+            "test/fixtures/gitLog.txt",
+            "test/fixtures/diaryMonth.md"
+          ],
+          "acceptanceCriteria": [
+            "gitLog.txt contains three commit blocks with correct separator format",
+            "One commit has +0530 timezone offset",
+            "One commit contains TIL: in its body",
+            "diaryMonth.md has two existing entries with correct heading format"
+          ],
+          "subAgentType": "implement",
+          "status": "pending"
+        },
+        {
+          "id": "phase-1-task-claude-md",
+          "title": "Generate CLAUDE.md project orientation",
+          "description": "Create a CLAUDE.md file in the project root. This file is auto-loaded by Claude Code at session start and survives context compaction, providing persistent orientation for all agents (orchestrator, judge, fix). Derive content from the spec and guidelines. Include: project purpose (1-2 sentences), dev commands (build, test, lint), directory layout with one-line descriptions, code conventions (language, module system, naming, export style), testing patterns (framework, file location), and git commit format. Keep it under 80 lines — concise enough to scan, detailed enough to orient.",
+          "dependsOn": [],
+          "specSections": [],
+          "targetPaths": [
+            "CLAUDE.md"
+          ],
+          "acceptanceCriteria": [
+            "CLAUDE.md exists in project root",
+            "Contains project purpose, dev commands, directory layout, and code conventions",
+            "Under 80 lines"
+          ],
+          "subAgentType": "scaffold",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Core data pipeline implementation",
+      "description": "Implement git log parsing and commit categorization — the pure functions that transform raw git output into structured, categorized data.",
+      "requiresBrowserTest": false,
+      "tasks": [
+        {
+          "id": "phase-2-task-1",
+          "title": "Implement parseGitLog in git.ts",
+          "description": "Implement the parseGitLog function in src/git.ts. Split raw input on the COMMIT_SEPARATOR ('---COMMIT---'). For each non-empty block: extract SHA (first line), subject (second line), body (everything between line 3 and '---BODY_END---' marker, trimmed, may be empty), author name (line after ---BODY_END---), author date in ISO format with offset (next line). Then parse --stat output that follows the author date: individual file lines matching the pattern ' path | N +- ' and the summary line ' N files changed, N insertions(+), N deletions(-)'. Build FileStat[] from individual file lines. Parse total insertions/deletions from the summary line. Construct Commit objects with timestamp as Date preserving the original offset string for later use. If a required field is missing, throw with a message identifying the malformed block. Return Commit[]. Also implement readGitLog using spawnSync as shown in the plan S4.",
+          "dependsOn": [
+            "phase-1-task-4"
+          ],
+          "specSections": [
+            "§4",
+            "§6"
+          ],
+          "targetPaths": [
+            "src/git.ts"
+          ],
+          "acceptanceCriteria": [
+            "parseGitLog with three-commit fixture returns array of 3 Commit objects with correct fields",
+            "parseGitLog with empty string returns empty array",
+            "parseGitLog with malformed block throws with descriptive message",
+            "Timestamps preserve timezone offset information",
+            "readGitLog throws 'git is not available on PATH' when spawnSync result.error is set",
+            "readGitLog throws with repo path and stderr when git exits non-zero"
+          ],
+          "subAgentType": "implement",
+          "status": "pending"
+        },
+        {
+          "id": "phase-2-task-2",
+          "title": "Implement categorize.ts functions",
+          "description": "Implement all functions in src/categorize.ts. categorizeCommit(commit: Commit): CategorizedCommit — strip leading whitespace from subject, lowercase it, match against regex ^(feat|fix|refactor|docs|chore|test|style|perf|build|ci)(\\(.+\\))?: to extract the prefix as CommitCategory. If no match, assign 'other'. extractTilItems(commit: Commit, repoName: string): TilItem[] — scan subject and body for lines containing 'TIL:' (case-sensitive). Extract everything after 'TIL:' to end of line, trim whitespace. Return TilItem with text, repoName, and 7-char short SHA. assignDaySegment(timestamp: Date, tzOffset: string): DaySegment — compute the local hour using the timezone offset embedded in the git timestamp. Map: 5-11 morning, 12-16 afternoon, 17-23 evening, 0-4 night. buildRepoEntry(repoPath: string, commits: Commit[]): RepoEntry — categorize each commit, extract TIL items, assign day segments. Sort commits ascending by timestamp. Use path.basename for repoName. buildDiaryEntry(date: string, repoEntries: RepoEntry[]): DiaryEntry — aggregate TIL items from all repos, deduplicate by exact text match keeping first occurrence.",
+          "dependsOn": [
+            "phase-1-task-4"
+          ],
+          "specSections": [
+            "§4",
+            "§6"
+          ],
+          "targetPaths": [
+            "src/categorize.ts"
+          ],
+          "acceptanceCriteria": [
+            "categorizeCommit assigns correct category for all 11 prefix types",
+            "Category matching is case-insensitive",
+            "Scoped prefixes like feat(scope): are recognized",
+            "No-prefix subjects get 'other'",
+            "extractTilItems finds TIL in subject and body",
+            "Multiple TIL items from one commit are all extracted",
+            "assignDaySegment maps hours correctly per spec boundaries",
+            "buildDiaryEntry deduplicates TIL items by text"
+          ],
+          "subAgentType": "implement",
+          "status": "pending"
+        },
+        {
+          "id": "phase-2-task-3",
+          "title": "Write tests for parseGitLog",
+          "description": "Create src/__tests__/git.test.ts. Import parseGitLog from ../git.js. Tests: (1) Parse the three-commit fixture from test/fixtures/gitLog.txt — verify array length 3, verify SHA, subject, body, author, timestamp, filesChanged, insertions, deletions for each commit. (2) Empty string input returns empty array. (3) Malformed block (missing required field) throws with descriptive message. (4) Commit with +0530 offset preserves the timezone information correctly. Use describe/it/expect from vitest.",
+          "dependsOn": [
+            "phase-2-task-1",
+            "phase-1-task-5"
+          ],
+          "specSections": [
+            "§8"
+          ],
+          "targetPaths": [
+            "src/__tests__/git.test.ts"
+          ],
+          "acceptanceCriteria": [
+            "All four test cases are implemented",
+            "Tests import from vitest explicitly",
+            "Tests use the fixture file from test/fixtures/",
+            "npm run test passes for git.test.ts"
+          ],
+          "subAgentType": "test-writer",
+          "status": "pending"
+        },
+        {
+          "id": "phase-2-task-4",
+          "title": "Write tests for categorize.ts",
+          "description": "Create src/__tests__/categorize.test.ts. Import categorizeCommit, extractTilItems, assignDaySegment from ../categorize.js. Tests for categorizeCommit: (1) 'feat: add X' → feat, (2) 'feat(scope): add X' → feat, (3) 'no prefix here' → other, (4) 'Fix: capital' → fix (case-insensitive). Tests for extractTilItems: (1) 'TIL: X' in subject → one item with text 'X', (2) TIL in body → one item, (3) TIL in subject and body → two items, (4) no TIL → empty array, (5) duplicate TIL text across repos is deduplicated in buildDiaryEntry. Tests for assignDaySegment: parameterized test with hours 5→morning, 11→morning, 12→afternoon, 16→afternoon, 17→evening, 23→evening, 0→night, 4→night as shown in plan S8.",
+          "dependsOn": [
+            "phase-2-task-2"
+          ],
+          "specSections": [
+            "§8"
+          ],
+          "targetPaths": [
+            "src/__tests__/categorize.test.ts"
+          ],
+          "acceptanceCriteria": [
+            "All categorizeCommit test cases pass",
+            "All extractTilItems test cases pass",
+            "All 8 assignDaySegment boundary cases pass",
+            "npm run test passes for categorize.test.ts"
+          ],
+          "subAgentType": "test-writer",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Markdown generation and file I/O",
+      "description": "Implement markdown rendering from structured diary data and filesystem operations for reading/writing diary files.",
+      "requiresBrowserTest": false,
+      "tasks": [
+        {
+          "id": "phase-3-task-1",
+          "title": "Implement markdown.ts",
+          "description": "Implement all functions in src/markdown.ts. formatDiaryEntry(entry: DiaryEntry): string — generate markdown following spec BR-8 format. Start with '## YYYY-MM-DD' heading. If tilItems is non-empty, add '### Today I Learned' section with items formatted as '- Item text (`abc1234`, repo-name)'. For each repo in entry.repos (in order), add '### repo-name' heading. List commits flat, sorted ascending by timestamp, formatted as '- `<short-sha>` <subject> — <category> (+<insertions> / -<deletions>)'. Short SHA is first 7 characters. If all repos have zero commits, return empty string. findExistingEntry(content: string, date: string): boolean — scan content for a line matching '## YYYY-MM-DD' (the date heading). Return true if found. replaceEntry(content: string, date: string, newEntry: string): string — find the existing entry block (from its ## heading to the line before the next ## heading or end of file), remove it, insert newEntry at the same position. appendEntry(content: string | null, date: string, newEntry: string): string — if content is null, create new file with '# Code Diary — YYYY-MM' top heading followed by newEntry and trailing '---'. If content exists, append '---' separator and newEntry to end.",
+          "dependsOn": [
+            "phase-1-task-4"
+          ],
+          "specSections": [
+            "§6",
+            "§8"
+          ],
+          "targetPaths": [
+            "src/markdown.ts"
+          ],
+          "acceptanceCriteria": [
+            "formatDiaryEntry produces correct heading and commit line format",
+            "TIL section is included only when tilItems exist",
+            "Commits are sorted ascending by timestamp within each repo",
+            "findExistingEntry returns true when date heading present",
+            "findExistingEntry returns false when date absent",
+            "replaceEntry removes old block and inserts new at same location",
+            "appendEntry creates new file with top heading when content is null"
+          ],
+          "subAgentType": "implement",
+          "status": "pending"
+        },
+        {
+          "id": "phase-3-task-2",
+          "title": "Implement fileIO.ts",
+          "description": "Implement src/fileIO.ts with three functions. readFile(filePath: string): string — wraps readFileSync with utf8 encoding; throws if file does not exist. writeFile(filePath: string, content: string): void — creates intermediate directories with mkdirSync recursive, then writes with writeFileSync utf8. fileExists(filePath: string): boolean — wraps existsSync. All imports from 'fs' and 'path' (for dirname).",
+          "dependsOn": [
+            "phase-1-task-4"
+          ],
+          "specSections": [
+            "§8"
+          ],
+          "targetPaths": [
+            "src/fileIO.ts"
+          ],
+          "acceptanceCriteria": [
+            "writeFile creates intermediate directories if they do not exist",
+            "writeFile overwrites existing file without error",
+            "readFile throws when file does not exist",
+            "fileExists returns true for existing files and false otherwise"
+          ],
+          "subAgentType": "implement",
+          "status": "pending"
+        },
+        {
+          "id": "phase-3-task-3",
+          "title": "Write tests for markdown.ts",
+          "description": "Create src/__tests__/markdown.test.ts. Tests for formatDiaryEntry: (1) DiaryEntry with one repo and two commits produces markdown with ## date heading, repo section, and two correctly formatted commit lines with short SHAs. (2) DiaryEntry with one TIL item includes '### Today I Learned' section before repo sections. (3) DiaryEntry with no TIL items has no TIL heading. (4) Commits are listed flat sorted ascending by timestamp. (5) DiaryEntry where all repos have zero commits returns empty string. Tests for findExistingEntry: (1) returns true when '## 2026-03-28' exists in fixture content. (2) returns false when date is absent. Tests for replaceEntry: (1) replaces existing entry block with new content, preserving other entries (use diaryMonth.md fixture). Tests for appendEntry: (1) null content creates new file with top heading. (2) existing content gets separator and new entry appended.",
+          "dependsOn": [
+            "phase-3-task-1",
+            "phase-1-task-5"
+          ],
+          "specSections": [
+            "§8"
+          ],
+          "targetPaths": [
+            "src/__tests__/markdown.test.ts"
+          ],
+          "acceptanceCriteria": [
+            "All formatDiaryEntry test cases pass",
+            "All findExistingEntry test cases pass",
+            "replaceEntry test verifies other entries are preserved",
+            "appendEntry tests cover both null and existing content",
+            "npm run test passes for markdown.test.ts"
+          ],
+          "subAgentType": "test-writer",
+          "status": "pending"
+        },
+        {
+          "id": "phase-3-task-4",
+          "title": "Write tests for fileIO.ts",
+          "description": "Create src/__tests__/fileIO.test.ts. Use os.tmpdir() to create temporary test paths. Tests: (1) writeFile creates intermediate directories and writes content. (2) writeFile overwrites an existing file. (3) readFile returns file content as string. (4) readFile throws when file does not exist. (5) fileExists returns true for existing file and false for non-existing. Clean up temp files in afterEach.",
+          "dependsOn": [
+            "phase-3-task-2"
+          ],
+          "specSections": [
+            "§8"
+          ],
+          "targetPaths": [
+            "src/__tests__/fileIO.test.ts"
+          ],
+          "acceptanceCriteria": [
+            "writeFile creates dirs and writes correctly",
+            "readFile throws on missing file",
+            "fileExists returns correct boolean",
+            "All tests clean up temp files",
+            "npm run test passes for fileIO.test.ts"
+          ],
+          "subAgentType": "test-writer",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "CLI wiring and entry point",
+      "description": "Implement argument parsing, input validation, the replace prompt, and the top-level orchestration that ties all modules together.",
+      "requiresBrowserTest": false,
+      "tasks": [
+        {
+          "id": "phase-4-task-1",
+          "title": "Implement cli.ts argument parsing and validation",
+          "description": "Implement src/cli.ts. parseArgs(argv: string[]): CliArgs — parse process.argv (slice off first 2 elements). Collect positional args as repoPaths, extract --date and --output flags. If no repoPaths, write usage to stderr and exit(2). Default date to today via new Date().toLocaleDateString('en-CA'). Validate date with isValidDate helper: must match /^\\d{4}-\\d{2}-\\d{2}$/ and be a valid calendar date; if invalid exit(2) with error message. Default outputDir to process.cwd(). Export CliArgs type. validateRepoPaths(paths: string[]): void — for each path, resolve to absolute, check existsSync (exit 2 with 'path does not exist'), check existsSync(join(abs, '.git')) (exit 2 with 'not a git repository'). Implement promptReplace using readline from node:readline as shown in plan S5. Implement run(argv: string[]): Promise<void> as the top-level orchestrator: parseArgs → validateRepoPaths → for each repo call readGitLog and parseGitLog → buildRepoEntry → filter empty → if none exit 0 with message → buildDiaryEntry → formatDiaryEntry → check existing entry → prompt if needed → writeFile. Handle the replace flow per spec §2 and FM-8.",
+          "dependsOn": [
+            "phase-2-task-1",
+            "phase-2-task-2",
+            "phase-3-task-1",
+            "phase-3-task-2"
+          ],
+          "specSections": [
+            "§2",
+            "§5",
+            "§7"
+          ],
+          "targetPaths": [
+            "src/cli.ts"
+          ],
+          "acceptanceCriteria": [
+            "parseArgs extracts repo paths, date, and output correctly",
+            "Missing repo paths triggers exit(2) with usage message",
+            "Invalid date triggers exit(2) with error message",
+            "validateRepoPaths checks existence and .git presence",
+            "Non-interactive stdin skips prompt and exits 1",
+            "run orchestrates the full pipeline correctly"
+          ],
+          "subAgentType": "implement",
+          "status": "pending"
+        },
+        {
+          "id": "phase-4-task-2",
+          "title": "Implement index.ts entry point",
+          "description": "Implement src/index.ts as the sole entry point. First line must be #!/usr/bin/env node shebang. Import run from ./cli.js. Call run(process.argv) and catch any error, writing to stderr with 'Error: ' prefix and exiting with code 2. No other logic in this file.",
+          "dependsOn": [
+            "phase-4-task-1"
+          ],
+          "specSections": [
+            "§5"
+          ],
+          "targetPaths": [
+            "src/index.ts"
+          ],
+          "acceptanceCriteria": [
+            "File starts with #!/usr/bin/env node",
+            "Imports run from ./cli.js",
+            "Catches errors and exits with code 2",
+            "Contains no business logic"
+          ],
+          "subAgentType": "implement",
+          "status": "pending"
+        },
+        {
+          "id": "phase-4-task-3",
+          "title": "Write tests for cli.ts parseArgs",
+          "description": "Create src/__tests__/cli.test.ts. Test parseArgs by passing synthetic argv arrays (prepend two dummy elements for node and script path). Tests: (1) Single repo path is captured. (2) Multiple repo paths are captured in order. (3) --date flag is captured. (4) --output flag is captured. (5) Missing repo paths causes process.exit(2) — mock process.exit with vi.spyOn. (6) Invalid date format causes process.exit(2). (7) Default date is today when --date not provided. (8) Default outputDir is cwd when --output not provided.",
+          "dependsOn": [
+            "phase-4-task-1"
+          ],
+          "specSections": [
+            "§8"
+          ],
+          "targetPaths": [
+            "src/__tests__/cli.test.ts"
+          ],
+          "acceptanceCriteria": [
+            "All 8 parseArgs test cases are implemented",
+            "process.exit is mocked, not actually called",
+            "Default values are verified",
+            "npm run test passes for cli.test.ts"
+          ],
+          "subAgentType": "test-writer",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "Build and validation",
+      "description": "Compile the project, verify all checks pass, and validate the architecture meets spec constraints.",
+      "requiresBrowserTest": false,
+      "tasks": [
+        {
+          "id": "phase-5-task-1",
+          "title": "Build dist/ and verify all checks pass",
+          "description": "Run npm run build (tsc) to compile src/ to dist/. Verify dist/index.js exists and starts with the shebang line. Run the full check command: npm run typecheck && npm run test. Fix any compilation errors or test failures. Ensure dist/ mirrors the src/ structure with .js files.",
+          "dependsOn": [
+            "phase-4-task-2",
+            "phase-4-task-3",
+            "phase-2-task-3",
+            "phase-2-task-4",
+            "phase-3-task-3",
+            "phase-3-task-4"
+          ],
+          "specSections": [
+            "§8",
+            "§9"
+          ],
+          "targetPaths": [
+            "dist/index.js",
+            "dist/cli.js",
+            "dist/git.js",
+            "dist/categorize.js",
+            "dist/markdown.js",
+            "dist/fileIO.js",
+            "dist/types/diary.js"
+          ],
+          "acceptanceCriteria": [
+            "npm run build succeeds without errors",
+            "dist/index.js exists with shebang line",
+            "npm run typecheck passes",
+            "npm run test passes with all tests green",
+            "dist/ contains compiled .js for every src/ module"
+          ],
+          "subAgentType": "implement",
+          "status": "pending"
+        },
+        {
+          "id": "phase-5-task-2",
+          "title": "Validate architectural constraints",
+          "description": "Review the implemented code against spec §8 architectural checks: (1) cli.ts contains no business logic beyond argument parsing and orchestrating calls. (2) git.ts contains no markdown generation. (3) markdown.ts contains no filesystem access and no subprocess calls. (4) fileIO.ts contains no git logic and no markdown generation. (5) No module imports from cli.ts. (6) All runtime dependencies are Node.js built-ins — verify package.json dependencies is empty. (7) All imports use .js extensions. (8) No default exports anywhere.",
+          "dependsOn": [
+            "phase-5-task-1"
+          ],
+          "specSections": [
+            "§8",
+            "§9"
+          ],
+          "targetPaths": [
+            "src/cli.ts",
+            "src/git.ts",
+            "src/markdown.ts",
+            "src/fileIO.ts",
+            "src/categorize.ts",
+            "src/index.ts"
+          ],
+          "acceptanceCriteria": [
+            "cli.ts has no business logic beyond wiring",
+            "git.ts has no markdown generation",
+            "markdown.ts has no fs or child_process imports",
+            "fileIO.ts has no git or markdown logic",
+            "No module imports from cli.ts",
+            "package.json dependencies is empty object",
+            "All imports use .js extensions",
+            "No default exports in any module"
+          ],
+          "subAgentType": "judge",
+          "status": "pending"
+        }
+      ]
+    }
+  ]
+}
