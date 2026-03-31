@@ -168,7 +168,7 @@
             "readGitLog throws with repo path and stderr when git exits non-zero"
           ],
           "subAgentType": "implement",
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "phase-2-task-2",
@@ -191,7 +191,7 @@
             "npm run test -- src/__tests__/git.test.ts passes"
           ],
           "subAgentType": "test-writer",
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "phase-2-task-3",
@@ -217,7 +217,7 @@
             "buildDiaryEntry deduplicates TIL items by text"
           ],
           "subAgentType": "implement",
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "phase-2-task-4",
@@ -240,7 +240,7 @@
             "npm run test -- src/__tests__/categorize.test.ts passes"
           ],
           "subAgentType": "test-writer",
-          "status": "pending"
+          "status": "complete"
         }
       ]
     },
