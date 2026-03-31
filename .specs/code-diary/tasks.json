@@ -32,7 +32,7 @@
             "npm run typecheck exits 0 (once stubs exist)"
           ],
           "subAgentType": "scaffold",
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "phase-1-task-2",
@@ -54,7 +54,7 @@
             "npm run typecheck passes"
           ],
           "subAgentType": "implement",
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "phase-1-task-3",
@@ -83,7 +83,7 @@
             "npm run typecheck passes"
           ],
           "subAgentType": "scaffold",
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "phase-1-task-4",
@@ -107,7 +107,7 @@
             "Both fixture files are valid and parseable"
           ],
           "subAgentType": "implement",
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "phase-1-task-claude-md",
@@ -124,7 +124,18 @@
             "Under 80 lines"
           ],
           "subAgentType": "scaffold",
-          "status": "pending"
+          "status": "complete"
+        },
+        {
+          "id": "phase-1-corrective-0",
+          "title": "phase-1-task-4: gitLog.txt fixture SHAs are now 39 characters instead of 40. Commit 1 SHA `abc1234567890abcdef1234567890abcdef1234` is 39 chars and commit 3 SHA `789abcdef1234567890abcdef1234567890abcd` is 39 chars. The fix removed 2 characters from each instead of 1. Spec §4 requires full 40-character SHAs. Fix by adding one hex character to each: e.g., `abc1234567890abcdef1234567890abcdef12345` and `789abcdef1234567890abcdef1234567890abcde`.",
+          "description": "phase-1-task-4: gitLog.txt fixture SHAs are now 39 characters instead of 40. Commit 1 SHA `abc1234567890abcdef1234567890abcdef1234` is 39 chars and commit 3 SHA `789abcdef1234567890abcdef1234567890abcd` is 39 chars. The fix removed 2 characters from each instead of 1. Spec §4 requires full 40-character SHAs. Fix by adding one hex character to each: e.g., `abc1234567890abcdef1234567890abcdef12345` and `789abcdef1234567890abcdef1234567890abcde`.",
+          "dependsOn": [],
+          "specSections": [],
+          "targetPaths": [],
+          "acceptanceCriteria": [],
+          "subAgentType": "implement",
+          "status": "complete"
         }
       ]
     },
