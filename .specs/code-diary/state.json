@@ -1,8 +1,9 @@
 {
-  "currentPhase": "phase-3",
+  "currentPhase": "phase-4",
   "completedPhases": [
     "phase-1",
-    "phase-2"
+    "phase-2",
+    "phase-3"
   ],
   "phaseReports": [
     {
@@ -134,6 +135,46 @@
       },
       "judgeFixCycles": 0,
       "endSha": "85eb29a7a4fde1d18ebd5fe74c4a024ab72d5f37"
+    },
+    {
+      "phaseId": "phase-3",
+      "status": "complete",
+      "summary": "Implemented all markdown generation functions (formatDiaryEntry, findExistingEntry, replaceEntry, appendEntry) and file I/O functions (readFile, writeFile, fileExists). All 55 tests pass across 4 test files, typecheck clean.",
+      "tasksCompleted": [
+        "phase-3-task-1",
+        "phase-3-task-2",
+        "phase-3-task-3",
+        "phase-3-task-4"
+      ],
+      "tasksFailed": [],
+      "orchestratorAnalysis": "All 4 tasks completed successfully. Implementation follows spec §8 precisely: formatDiaryEntry handles TIL sections, multi-repo entries, commit line formatting, empty entry detection. Entry management functions support the replace-confirmation workflow. fileIO.ts is a minimal fs wrapper with no business logic. 55 tests pass, typecheck clean, zero new dependencies.",
+      "recommendedAction": "advance",
+      "correctiveTasks": [],
+      "decisionsLog": [
+        {
+          "text": "replaceEntry uses newline splitting and finds next '## ' heading to determine entry block boundaries, matching the spec's description of entry structure",
+          "tier": "tactical"
+        },
+        {
+          "text": "formatDiaryEntry sorts commits by timestamp within each repo section defensively (even though buildRepoEntry already sorts) to ensure correctness regardless of caller",
+          "tier": "tactical"
+        },
+        {
+          "text": "appendEntry handles trailing newline in existing content to avoid double newlines",
+          "tier": "tactical"
+        }
+      ],
+      "corrections": [],
+      "handoff": "Phase 3 complete. markdown.ts provides formatDiaryEntry (generates markdown with date heading, optional TIL section, per-repo commit listings sorted ascending by timestamp, separator), findExistingEntry (scans for date heading), replaceEntry (swaps entry block preserving surrounding content), and appendEntry (creates new file with header or appends to existing). fileIO.ts provides readFile (readFileSync), writeFile (mkdirSync recursive + writeFileSync), and fileExists (existsSync). All functions are pure (markdown.ts) or thin fs wrappers (fileIO.ts) with no cross-module logic leakage. The CLI orchestration layer (cli.ts) can now compose git.ts → categorize.ts → markdown.ts → fileIO.ts for the full pipeline.",
+      "startSha": "d0325a51c2f77a4b01209c38bf0eee0c7f03aebe",
+      "judgeAssessment": {
+        "passed": true,
+        "issues": [],
+        "suggestions": [],
+        "corrections": []
+      },
+      "judgeFixCycles": 0,
+      "endSha": "b8d4126233e5acdffca04d8c137cbbe897b7dbae"
     }
   ],
   "phaseRetries": {
