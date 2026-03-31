@@ -1,15 +1,15 @@
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import { dirname } from "path";
+
 export const readFile = (filePath: string): string => {
-  void filePath;
-  throw new Error("not implemented");
+  return readFileSync(filePath, "utf8");
 };
 
 export const writeFile = (filePath: string, content: string): void => {
-  void filePath;
-  void content;
-  throw new Error("not implemented");
+  mkdirSync(dirname(filePath), { recursive: true });
+  writeFileSync(filePath, content, "utf8");
 };
 
 export const fileExists = (filePath: string): boolean => {
-  void filePath;
-  throw new Error("not implemented");
+  return existsSync(filePath);
 };
