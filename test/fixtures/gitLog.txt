@@ -1,4 +1,4 @@
-abc1234567890abcdef1234567890abcdef123456
+abc1234567890abcdef1234567890abcdef1234
 feat: add user authentication
 TIL: JWT tokens need to be rotated periodically
 ---BODY_END---
@@ -18,7 +18,7 @@ John Coder
  src/parser.ts | 5 +++--
  1 file changed, 3 insertions(+), 2 deletions(-)
 ---COMMIT---
-789abcdef1234567890abcdef1234567890abcdef
+789abcdef1234567890abcdef1234567890abcd
 update README with new examples
 ---BODY_END---
 Jane Dev
