@@ -10,6 +10,7 @@ export type Commit = {
   body: string;
   author: string;
   timestamp: Date;
+  rawTimestamp: string;
   filesChanged: FileStat[];
   insertions: number;
   deletions: number;
