@@ -4,12 +4,14 @@ const BODY_END_MARKER = "\0\0BODY_END\0\0";
 const GIT_FORMAT_SEPARATOR = "%x00%x00COMMIT%x00%x00";
 const GIT_FORMAT_BODY_END = "%x00%x00BODY_END%x00%x00";
 const GIT_FORMAT = `%H%n%s%n%b${GIT_FORMAT_BODY_END}%n%an%n%ai`;
-export const readGitLog = (repoPath, date) => {
+export const readGitLog = (repoPath, date, authors) => {
+    const authorArgs = (authors ?? []).map((a) => `--author=${a}`);
     const result = spawnSync("git", [
         "log",
         "--no-merges",
         `--after=${date} 00:00:00`,
         `--before=${date} 23:59:59`,
+        ...authorArgs,
         "--stat",
         `--pretty=format:${GIT_FORMAT_SEPARATOR}%n${GIT_FORMAT}`,
     ], { cwd: repoPath, encoding: "utf8" });
@@ -20,6 +22,17 @@ export const readGitLog = (repoPath, date) => {
         throw new Error(`git log failed for ${repoPath}: ${result.stderr}`);
     }
     return result.stdout;
+};
+export const getAuthorEmail = (repoPath) => {
+    const result = spawnSync("git", ["config", "user.email"], {
+        cwd: repoPath,
+        encoding: "utf8",
+    });
+    if (result.error || result.status !== 0) {
+        return undefined;
+    }
+    const email = result.stdout.trim();
+    return email.length > 0 ? email : undefined;
 };
 const parseFileStat = (line) => {
     const match = line.match(/^\s*(.+?)\s*\|\s*(\d+)\s*(\+*)(-*)\s*$/);
