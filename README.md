@@ -17,7 +17,8 @@ Automatic developer diary. Run `code-diary` once a day (or multiple times — it
    ```json
    {
      "output-dir": "~/diary",
-     "repos": ["~/Projects/api", "~/Projects/web"]
+     "repos": ["~/Projects/api", "~/Projects/web"],
+     "authors": ["rob@example.com", "rob@work.com"]
    }
    ```
 
@@ -30,17 +31,30 @@ Automatic developer diary. Run `code-diary` once a day (or multiple times — it
 That's it. Every time you run `code-diary`, it:
 
 - Creates (or updates) today's daily entry from your configured repos
+- Filters commits to your identity using `authors` (or falls back to each repo's `git config user.email`)
 - Merges new commits into the existing file if you've already run it today
 - Regenerates weekly and monthly aggregate reports for the current month
 
 All artifacts land in your output directory:
 
 ```
-diary/
+<output-dir>/
   daily/    # code-diary-YYYY-MM-DD.md
   weekly/   # code-diary-YYYY-MM-W#.md
   monthly/  # code-diary-YYYY-MM.md
 ```
+
+## Backfill
+
+Missed a few days? The `--since` flag generates entries for a range of dates ending at `--date` (or today):
+
+```bash
+code-diary --since 3d            # last 3 days
+code-diary --since 2w            # last 2 weeks
+code-diary --since 1m --date 2026-03-31  # all of March
+```
+
+Days with no commits are skipped silently.
 
 ## Automate It
 
@@ -82,25 +96,36 @@ Weekly and monthly reports aggregate these daily entries into higher-level summa
 ## CLI Reference
 
 ```
-code-diary [<repo-path>...] [--date <YYYY-MM-DD>] [--output <dir>]
+code-diary [<repo-path>...] [--date <YYYY-MM-DD>] [--since <N><d|w|m>] [--output <dir>]
 code-diary aggregate [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>] [--output <dir>]
 ```
 
 | Argument | Description |
 |---|---|
 | `<repo-path>` | One or more repo paths (reads from config if omitted) |
-| `--date <YYYY-MM-DD>` | Date to generate the entry for (defaults to today) |
+| `--date <YYYY-MM-DD>` | End date for the entry window (defaults to today) |
+| `--since <N><d\|w\|m>` | Backfill N days/weeks/months ending at `--date` |
 | `--output <dir>` | Output directory (defaults to config or cwd) |
 | `-h, --help` | Show help message and exit |
 
 CLI arguments override config values. If `repos` is set in your config, you can run `code-diary` with no arguments at all.
+
+### Config
+
+Optional settings file at `~/.code-diary/settings.json`:
+
+| Key | Type | Description |
+|---|---|---|
+| `output-dir` | `string` | Default output directory (supports `~`) |
+| `repos` | `string[]` | Default repo paths (supports `~`) |
+| `authors` | `string[]` | Email patterns for filtering commits across identities. Falls back to each repo's `git config user.email` if omitted. |
 
 ### Aggregate Subcommand
 
 Aggregate runs automatically after each `code-diary` invocation. You can also run it standalone for a broader date range:
 
 ```bash
-code-diary aggregate                                  # regenerate all reports
+code-diary aggregate                                    # regenerate all reports
 code-diary aggregate --from 2025-06-01 --to 2025-06-30  # specific range
 ```
 
@@ -109,6 +134,10 @@ code-diary aggregate --from 2025-06-01 --to 2025-06-30  # specific range
 | `--from <YYYY-MM-DD>` | Start date (defaults to earliest diary entry) |
 | `--to <YYYY-MM-DD>` | End date (defaults to today) |
 | `--output <dir>` | Output directory (defaults to config or cwd) |
+
+## Working with AI Agents
+
+code-diary outputs plain markdown and runs as a single CLI command with a zero exit code on success. This makes it a natural fit for AI agents that need structured context about what you've been working on. See [Working with Agents](docs/working_with_agents.md) for patterns and examples.
 
 ## Requirements
 
