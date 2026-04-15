@@ -391,7 +391,7 @@
             "src/index.ts calls run with catch handler exiting 2"
           ],
           "subAgentType": "implement",
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "phase-4-task-2",
@@ -417,7 +417,7 @@
             "npm run test -- src/__tests__/cli.test.ts passes"
           ],
           "subAgentType": "test-writer",
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "phase-4-task-3",
@@ -449,7 +449,7 @@
             "All imports use .js extensions"
           ],
           "subAgentType": "judge",
-          "status": "pending"
+          "status": "complete"
         }
       ]
     }
