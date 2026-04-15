@@ -78,6 +78,19 @@ describe("parseArgs", () => {
         expect(result.date).toBe("2026-03-30");
         expect(result.outputDir).toBe("/tmp/out");
     });
+    it("prints help and exits 0 for --help", () => {
+        vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+        expect(() => parseArgs(["node", "script", "--help"])).toThrow("process.exit called");
+        expect(process.exit).toHaveBeenCalledWith(0);
+        expect(process.stdout.write).toHaveBeenCalledWith(expect.stringContaining("Usage:"));
+        expect(process.stdout.write).toHaveBeenCalledWith(expect.stringContaining("--date"));
+    });
+    it("prints help and exits 0 for -h", () => {
+        vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+        expect(() => parseArgs(["node", "script", "-h"])).toThrow("process.exit called");
+        expect(process.exit).toHaveBeenCalledWith(0);
+        expect(process.stdout.write).toHaveBeenCalledWith(expect.stringContaining("Usage:"));
+    });
     it("exits 2 when no repos provided", () => {
         expect(() => parseArgs(["node", "script"])).toThrow("process.exit called");
         expect(process.exit).toHaveBeenCalledWith(2);

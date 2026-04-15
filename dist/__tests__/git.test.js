@@ -26,11 +26,11 @@ describe("parseGitLog", () => {
         expect(parseGitLog("   \n  ")).toEqual([]);
     });
     it("throws on malformed block missing BODY_END marker", () => {
-        const bad = "abc1234567890abcdef1234567890abcdef12345\nfeat: something\n---COMMIT---";
+        const bad = "---COMMIT---\nabc1234567890abcdef1234567890abcdef12345\nfeat: something";
         expect(() => parseGitLog(bad)).toThrow("missing ---BODY_END---");
     });
     it("throws on malformed block with invalid SHA", () => {
-        const bad = "not-a-sha\nfeat: something\n---BODY_END---\nAuthor\n2026-03-30 10:00:00 +0000\n---COMMIT---";
+        const bad = "---COMMIT---\nnot-a-sha\nfeat: something\n---BODY_END---\nAuthor\n2026-03-30 10:00:00 +0000";
         expect(() => parseGitLog(bad)).toThrow("invalid SHA");
     });
     it("preserves non-UTC offset timestamp correctly", () => {

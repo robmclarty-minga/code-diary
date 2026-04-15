@@ -9,7 +9,7 @@ export const readGitLog = (repoPath, date) => {
         `--after=${date} 00:00:00`,
         `--before=${date} 23:59:59`,
         "--stat",
-        `--pretty=format:${GIT_FORMAT}%n${COMMIT_SEPARATOR}`,
+        `--pretty=format:${COMMIT_SEPARATOR}%n${GIT_FORMAT}`,
     ], { cwd: repoPath, encoding: "utf8" });
     if (result.error) {
         throw new Error("git is not available on PATH");

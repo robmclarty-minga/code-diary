@@ -6,6 +6,24 @@ import { buildRepoEntry, buildDiaryEntry } from "./categorize.js";
 import { formatDiaryEntry, findExistingEntry, replaceEntry, appendEntry, } from "./markdown.js";
 import { readFile, writeFile, fileExists } from "./fileIO.js";
 const USAGE = `Usage: code-diary <repo-path> [<repo-path>...] [--date <YYYY-MM-DD>] [--output <dir>]\n`;
+const HELP = `Usage: code-diary <repo-path> [<repo-path>...] [options]
+
+Read git log output from one or more repos, categorize commits for a given
+date, and append a structured markdown entry to a monthly diary file.
+
+Arguments:
+  <repo-path>          Path to a git repository (at least one required)
+
+Options:
+  --date <YYYY-MM-DD>  Date to generate the entry for (default: today)
+  --output <dir>       Directory for diary output (default: current directory)
+  -h, --help           Show this help message and exit
+
+Examples:
+  code-diary ./my-project
+  code-diary ~/repos/api ~/repos/web --date 2026-03-30
+  code-diary . --output ~/diary
+`;
 export const isValidDate = (dateStr) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
         return false;
@@ -28,7 +46,11 @@ export const parseArgs = (argv) => {
     let i = 0;
     while (i < args.length) {
         const arg = args[i];
-        if (arg === "--date") {
+        if (arg === "--help" || arg === "-h") {
+            process.stdout.write(HELP);
+            process.exit(0);
+        }
+        else if (arg === "--date") {
             date = args[i + 1];
             i += 2;
         }
