@@ -39,5 +39,14 @@ export type DiaryEntry = {
 export type CliArgs = {
     repoPaths: string[];
     date: string;
+    outputDir: string | undefined;
+};
+export type Settings = {
+    "output-dir"?: string;
+    repos?: string[];
+};
+export type ResolvedArgs = {
+    repoPaths: string[];
+    date: string;
     outputDir: string;
 };
