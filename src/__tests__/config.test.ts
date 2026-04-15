@@ -68,6 +68,32 @@ describe("loadSettings", () => {
     expect(() => loadSettings()).toThrow('"repos" must be an array of strings');
   });
 
+  it("parses authors array", () => {
+    mockedFileExists.mockReturnValue(true);
+    mockedReadFile.mockReturnValue(
+      JSON.stringify({ authors: ["a@x.com", "b@y.com"] }),
+    );
+
+    const settings = loadSettings();
+    expect(settings.authors).toEqual(["a@x.com", "b@y.com"]);
+  });
+
+  it("throws when authors is not an array", () => {
+    mockedFileExists.mockReturnValue(true);
+    mockedReadFile.mockReturnValue(JSON.stringify({ authors: "a@x.com" }));
+
+    expect(() => loadSettings()).toThrow('"authors" must be an array');
+  });
+
+  it("throws when authors contains non-strings", () => {
+    mockedFileExists.mockReturnValue(true);
+    mockedReadFile.mockReturnValue(JSON.stringify({ authors: ["a@x.com", 42] }));
+
+    expect(() => loadSettings()).toThrow(
+      '"authors" must be an array of strings',
+    );
+  });
+
   it("returns empty settings for empty object", () => {
     mockedFileExists.mockReturnValue(true);
     mockedReadFile.mockReturnValue("{}");
@@ -125,5 +151,23 @@ describe("resolveArgs", () => {
     const cli: CliArgs = { repoPaths: ["/repo"], date: "2026-04-15", outputDir: undefined, since: undefined };
     const resolved = resolveArgs(cli, {});
     expect(resolved.date).toBe("2026-04-15");
+  });
+
+  it("passes through authors from settings", () => {
+    const cli: CliArgs = { repoPaths: ["/repo"], date: "2026-04-15", outputDir: undefined, since: undefined };
+    const resolved = resolveArgs(cli, { authors: ["a@x.com", "b@y.com"] });
+    expect(resolved.authors).toEqual(["a@x.com", "b@y.com"]);
+  });
+
+  it("resolves authors to undefined when settings has none", () => {
+    const cli: CliArgs = { repoPaths: ["/repo"], date: "2026-04-15", outputDir: undefined, since: undefined };
+    const resolved = resolveArgs(cli, {});
+    expect(resolved.authors).toBeUndefined();
+  });
+
+  it("resolves authors to undefined when settings.authors is empty", () => {
+    const cli: CliArgs = { repoPaths: ["/repo"], date: "2026-04-15", outputDir: undefined, since: undefined };
+    const resolved = resolveArgs(cli, { authors: [] });
+    expect(resolved.authors).toBeUndefined();
   });
 });

@@ -65,10 +65,12 @@ export type CliArgs = {
 export type Settings = {
   "output-dir"?: string;
   repos?: string[];
+  authors?: string[];
 };
 
 export type ResolvedArgs = {
   repoPaths: string[];
   date: string;
   outputDir: string;
+  authors: string[] | undefined;
 };

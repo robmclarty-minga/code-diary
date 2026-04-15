@@ -40,6 +40,16 @@ export const loadSettings = () => {
             }
         }
     }
+    if ("authors" in obj) {
+        if (!Array.isArray(obj["authors"])) {
+            throw new Error(`"authors" must be an array in ${CONFIG_PATH}`);
+        }
+        for (const item of obj["authors"]) {
+            if (typeof item !== "string") {
+                throw new Error(`"authors" must be an array of strings in ${CONFIG_PATH}`);
+            }
+        }
+    }
     return parsed;
 };
 export const resolveArgs = (cliArgs, settings) => {
@@ -49,9 +59,11 @@ export const resolveArgs = (cliArgs, settings) => {
     const repoPaths = rawRepoPaths.map(expandTilde);
     const rawOutputDir = cliArgs.outputDir ?? settings["output-dir"] ?? process.cwd();
     const outputDir = expandTilde(rawOutputDir);
+    const authors = settings.authors && settings.authors.length > 0 ? settings.authors : undefined;
     return {
         repoPaths,
         date: cliArgs.date,
         outputDir,
+        authors,
     };
 };
