@@ -190,7 +190,7 @@ describe("generateReports", () => {
     expect(monthlyCount).toBe(1);
   });
 
-  it("skips already-aggregated periods", () => {
+  it("overwrites existing reports with latest data", () => {
     const dir = getTmpDir();
     mkdirSync(join(dir, "daily"), { recursive: true });
     mkdirSync(join(dir, "weekly"), { recursive: true });
@@ -204,8 +204,8 @@ describe("generateReports", () => {
 
     const { weeklyCount, monthlyCount } = generateReports(dir, days);
 
-    expect(weeklyCount).toBe(0);
-    expect(monthlyCount).toBe(0);
+    expect(weeklyCount).toBe(1);
+    expect(monthlyCount).toBe(1);
   });
 
   it("returns zero counts for empty days", () => {

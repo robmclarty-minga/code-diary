@@ -11,7 +11,7 @@ const AGGREGATE_USAGE = `Usage: code-diary aggregate [--from <YYYY-MM-DD>] [--to
 const AGGREGATE_HELP = `Usage: code-diary aggregate [options]
 
 Generate weekly and monthly reports from daily diary entries.
-Reports are only generated for periods not already aggregated.
+Reports are regenerated from the latest daily entry data.
 
 Options:
   --from <YYYY-MM-DD>  Start date (default: earliest diary entry)
@@ -99,11 +99,6 @@ export const runAggregate = async (argv: string[]): Promise<void> => {
   days.sort((a, b) => a.date.localeCompare(b.date));
 
   const { weeklyCount, monthlyCount } = generateReports(diaryDir, days);
-
-  if (weeklyCount === 0 && monthlyCount === 0) {
-    process.stdout.write(`All reports are up to date.\n`);
-    return;
-  }
 
   const parts: string[] = [];
   if (weeklyCount > 0) {

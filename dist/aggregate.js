@@ -164,18 +164,14 @@ export const generateReports = (diaryDir, days) => {
                 continue;
             }
             const weekPath = join(diaryDir, "weekly", `code-diary-${week.slug}.md`);
-            if (!fileExists(weekPath)) {
-                const report = formatWeeklyReport(week, weekDays);
-                writeFile(weekPath, report);
-                weeklyCount += 1;
-            }
+            const report = formatWeeklyReport(week, weekDays);
+            writeFile(weekPath, report);
+            weeklyCount += 1;
         }
         const monthPath = join(diaryDir, "monthly", `code-diary-${month}.md`);
-        if (!fileExists(monthPath)) {
-            const report = formatMonthlyReport(month, monthDays);
-            writeFile(monthPath, report);
-            monthlyCount += 1;
-        }
+        const report = formatMonthlyReport(month, monthDays);
+        writeFile(monthPath, report);
+        monthlyCount += 1;
     }
     return { weeklyCount, monthlyCount };
 };
