@@ -1,149 +1,63 @@
 ---
 name: commit-til
-description: Review staged changes and create a conventional commit with TIL extraction. Use when the user asks to commit, says "/commit", or wants help writing a commit message. Generates commit messages compatible with code-diary's categorization and TIL parsing.
+description: Creates a conventional commit with TIL extraction for code-diary. Generates commit messages that code-diary's categorization and TIL parser can process.
+when_to_use: When the user asks to commit, says "/commit", wants help writing a commit message, or says "commit this" or "commit my changes."
+disable-model-invocation: true
+allowed-tools: Bash(git diff *) Bash(git status *) Bash(git log *) Bash(git add *) Bash(git commit *) Read
 ---
 
 # Commit with TIL Extraction
 
-Create a git commit using conventional commit format, identifying any learning moments as TIL entries that code-diary can parse.
+Create a conventional commit, extracting any learning moments as TIL entries for code-diary.
 
-## Step 1 — Review Changes
+## Workflow
 
-Run these commands to understand what's being committed:
+1. Run `git status`, `git diff --cached`, `git diff`, and `git log --oneline -5`.
+2. **Auto-stage** all unstaged changes and untracked files, EXCEPT files matching the never-stage list below. Stage files by name — never use `git add -A` or `git add .`.
+3. If nothing ends up staged, tell the user and stop.
+4. Read the full staged diff. Understand what changed and why.
+5. Write a conventional commit message: `type(scope): lowercase imperative summary`. This project recognizes: `feat|fix|refactor|docs|chore|test|style|perf|build|ci`.
+6. Scan for TIL opportunities (see below). Add them to the commit body if found.
+7. Commit immediately using a heredoc for multi-line messages. Do not ask for confirmation — the user invoked `/commit` because they want to commit.
 
-```
-git diff --cached
-git status
-git log --oneline -5
-```
+If `$ARGUMENTS` are provided, use them as context for the commit scope or description.
 
-Read the staged diff carefully. Understand what changed and why before writing anything.
+### Never auto-stage
 
-## Step 2 — Determine Commit Type
+Skip these files entirely. If they are the ONLY uncommitted changes, tell the user what was skipped and why.
 
-Choose one type based on the **primary intent** of the change:
+- `*.env*`, `*.pem`, `*.key`, `*.secret`, `credentials*`, `*token*` — secrets
+- `*.log` — logs
+- Binary files (images, archives, compiled blobs) — unless they are in a directory that clearly expects them (e.g., `test/fixtures/`)
+- Any file over 100 KB
 
-| Type | When to use |
-|------|-------------|
-| `feat` | New functionality visible to users or consumers |
-| `fix` | Bug fix — something was broken, now it works |
-| `refactor` | Code restructuring with no behavior change |
-| `docs` | Documentation only (README, comments, JSDoc) |
-| `chore` | Maintenance (deps, config, tooling, CI scripts) |
-| `test` | Adding or updating tests only |
-| `style` | Formatting, whitespace, semicolons — no logic change |
-| `perf` | Performance improvement with no behavior change |
-| `build` | Build system or external dependency changes |
-| `ci` | CI/CD pipeline configuration changes |
+When in doubt about a file, stage it. The user prefers speed over caution for normal code files.
 
-If the change spans multiple types, pick the one that describes the main purpose. A feature that also adds tests is `feat`, not `test`.
+## TIL Format
 
-## Step 3 — Choose a Scope (optional)
+code-diary's parser extracts TILs via `line.indexOf("TIL:")` and takes everything after `TIL:` to end-of-line, trimmed. The format is strict:
 
-Add a scope in parentheses if it clarifies which part of the codebase is affected:
+- Must be exactly `TIL:` — case-sensitive (not `til:` or `Til:`)
+- One TIL per line, in the commit body
+- Multiple TILs per commit are fine
 
-- `feat(auth): add token refresh` — scope narrows the area
-- `fix(parser): handle empty input` — scope identifies the module
+**Most commits will NOT have a TIL.** Only add one when there's a genuine insight:
+- First-time use of an API, language feature, or tool flag in this project
+- Non-obvious bug root cause — the "why" was surprising
+- Performance, config, or platform behavior that isn't widely known
 
-Skip the scope if the change is broad or the type alone is clear enough.
+## Edge Cases
 
-## Step 4 — Write the Subject Line
+- **Pre-commit hook failure**: The commit did not happen. Fix the issue, re-stage, and create a NEW commit. Never `--amend` after a hook failure.
+- **Only ignored files remain**: Tell the user what was skipped and why.
 
-Format: `type(scope): lowercase imperative summary`
-
-Rules:
-- Under 72 characters total
-- Lowercase after the colon
-- Imperative mood ("add", "fix", "remove" — not "added", "fixes", "removing")
-- No period at the end
-- Describe **what** the commit does, not how
-
-Good: `feat(api): add rate limiting to auth endpoints`
-Bad: `feat(api): Added rate limiting functionality to the authentication endpoints.`
-
-## Step 5 — Identify TIL Opportunities
-
-Scan the changes for learning moments. A TIL is worth adding when:
-
-- **First-time API or library usage** — you used a Node.js built-in, language feature, or tool flag you haven't used in this project before
-- **Non-obvious bug root cause** — the fix was straightforward but the "why" was surprising
-- **Performance discovery** — something was faster/slower than expected
-- **Config or tooling insight** — a flag, setting, or environment behavior that isn't widely known
-- **Platform or version quirk** — behavior that differs across OS, Node versions, or browsers
-
-If any apply, add `TIL:` lines in the commit body. Format matters:
+## Example
 
 ```
-TIL: the thing you learned
-```
-
-- **Case-sensitive**: must be exactly `TIL:` (not `til:` or `Til:`)
-- One TIL per line
-- Can appear anywhere in the body — start of line, middle of sentence, etc.
-- Multiple TILs per commit are fine (one per line)
-- Keep them concise — one sentence, no trailing period needed
-
-code-diary's parser finds these via `line.indexOf("TIL:")` and extracts everything after `TIL:` to end-of-line, trimmed.
-
-**Not every commit needs a TIL.** Most won't. Only add them when there's a genuine insight worth recording.
-
-## Step 6 — Compose the Body (when needed)
-
-Add a body when:
-- The "why" isn't obvious from the subject
-- There are TIL items to include
-- The change has notable trade-offs or alternatives considered
-- There's context that would help a future reader
-
-Skip the body when the subject says it all.
-
-Body format:
-```
-<blank line after subject>
-Brief explanation of why this change was made.
-
-TIL: something interesting discovered during this work
-```
-
-## Step 7 — Create the Commit
-
-Stage the relevant files and create the commit. Use a heredoc for the message to preserve formatting:
-
-```bash
-git add <specific files>
-git commit -m "$(cat <<'EOF'
-type(scope): subject line
-
-Optional body with context.
-
-TIL: optional learning if applicable
-EOF
-)"
-```
-
-Do not use `git add -A` or `git add .` — stage specific files to avoid accidentally including sensitive or unrelated files.
-
-## Examples
-
-**Simple commit, no body:**
-```
-feat(config): add settings.json loader
-```
-
-**Commit with body and TIL:**
-```
-fix(git): handle timezone offsets with half-hour increments
+fix(internal-tools): handle timezone offsets with half-hour increments
 
 India Standard Time (+0530) and similar half-hour offsets were being
 truncated to whole hours during day segment calculation.
 
 TIL: not all UTC offsets are whole hours — IST is +05:30, Nepal is +05:45
-```
-
-**Refactor, no TIL:**
-```
-refactor(markdown): extract daily file formatting into separate function
-
-Preparing for the aggregate subcommand which needs to parse and
-re-format daily entries independently.
 ```
