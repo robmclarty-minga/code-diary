@@ -1,105 +1,39 @@
 # code-diary
 
-Zero-dependency Node.js CLI that reads git log output from one or more repos, categorizes commits for a given date, and writes a structured markdown entry to a daily diary file. Automatically generates weekly and monthly aggregate reports after each run.
+Automatic developer diary. Run `code-diary` once a day (or multiple times — it's safe to re-run) and it reads your git history, categorizes your commits, extracts TILs, and writes structured daily, weekly, and monthly markdown reports. Zero dependencies beyond Node.js and git.
 
-## Requirements
+## Quick Start
 
-- Node.js >= 18
-- Git installed and available on `PATH`
+1. **Install**
 
-## Installation
+   ```bash
+   git clone <repo-url> && cd code-diary
+   npm install && npm run build
+   npm link   # makes `code-diary` available everywhere
+   ```
 
-```bash
-# Clone the repo
-git clone <repo-url>
-cd code-diary
+2. **Configure** (`~/.code-diary/settings.json`)
 
-# Install dev dependencies and build
-npm install
-npm run build
+   ```json
+   {
+     "output-dir": "~/diary",
+     "repos": ["~/Projects/api", "~/Projects/web"]
+   }
+   ```
 
-# Link globally (optional — makes `code-diary` available everywhere)
-npm link
-```
+3. **Run**
 
-## Usage
+   ```bash
+   code-diary
+   ```
 
-```
-code-diary [<repo-path>...] [--date <YYYY-MM-DD>] [--output <dir>]
-code-diary aggregate [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>] [--output <dir>]
-```
+That's it. Every time you run `code-diary`, it:
 
-### Arguments
+- Creates (or updates) today's daily entry from your configured repos
+- Merges new commits into the existing file if you've already run it today
+- Regenerates weekly and monthly aggregate reports for the current month
 
-| Argument | Description |
-|---|---|
-| `<repo-path>` | One or more paths to git repositories (reads from config if omitted) |
-| `--date <YYYY-MM-DD>` | Date to generate the entry for (defaults to today) |
-| `--output <dir>` | Directory where diary files are written (defaults to config or cwd) |
-| `-h, --help` | Show help message and exit |
-
-### Examples
-
-```bash
-# Generate a diary entry for today from one repo
-code-diary ~/projects/my-app
-
-# Generate for a specific date across multiple repos
-code-diary ~/projects/api ~/projects/frontend --date 2025-06-15
-
-# Write output to a specific directory
-code-diary ~/projects/api --output ~/diary
-
-# Use repos from config (no repo paths needed)
-code-diary
-```
-
-### Aggregate Subcommand
-
-Generate weekly and monthly reports from daily diary entries. Reports are regenerated from the latest daily entry data each time, so they always reflect the current state of your daily files.
-
-Aggregate runs automatically at the end of each `code-diary` invocation (scoped to the entry's month). You can also run it standalone for a broader date range:
-
-```bash
-# Regenerate all reports
-code-diary aggregate
-
-# Regenerate reports for a specific date range
-code-diary aggregate --from 2025-06-01 --to 2025-06-30
-
-# Specify output directory
-code-diary aggregate --output ~/diary
-```
-
-| Argument | Description |
-|---|---|
-| `--from <YYYY-MM-DD>` | Start date (defaults to earliest diary entry) |
-| `--to <YYYY-MM-DD>` | End date (defaults to today) |
-| `--output <dir>` | Diary output directory (defaults to config or cwd) |
-
-## Config
-
-Optional settings file at `~/.code-diary/settings.json`:
-
-```json
-{
-  "output-dir": "~/diary",
-  "repos": ["~/Projects/api", "~/Projects/web"]
-}
-```
-
-When `repos` is set, you can run `code-diary` with no positional arguments and it will read from the configured repositories. CLI arguments override config values.
-
-## Output
-
-Daily entries are written to `<output>/diary/daily/code-diary-YYYY-MM-DD.md`, one file per day. Each entry includes:
-
-- **Today I Learned** — items extracted from commit messages containing `TIL:` (e.g., `feat(auth): add OAuth flow TIL: refresh tokens expire separately`)
-- **Per-repo commit lists** — commits sorted chronologically with short SHA, subject, category, and diff stats
-
-If an entry for the given date already exists, new data is merged in. Repos covered by the current run get fresh data from git log; repos present in the existing file but not in the current run are preserved. This makes the command safe to run multiple times a day or from a scheduled task — no data is lost.
-
-Weekly and monthly reports are written alongside daily entries:
+All artifacts land in your output directory:
 
 ```
 diary/
@@ -108,7 +42,25 @@ diary/
   monthly/  # code-diary-YYYY-MM.md
 ```
 
-Example daily entry:
+## Automate It
+
+The command is designed to run unattended. A single invocation handles the full pipeline, so only one scheduled job is needed:
+
+```bash
+# crontab example: run at 6pm every weekday
+0 18 * * 1-5 /usr/local/bin/code-diary
+```
+
+Running multiple times for the same date is always safe — new commits merge in and reports regenerate from the latest data.
+
+## What You Get
+
+Each daily entry includes:
+
+- **Today I Learned** — items extracted from commit messages containing `TIL:` (e.g., `feat(auth): add OAuth flow TIL: refresh tokens expire separately`)
+- **Per-repo commit lists** — commits sorted chronologically with short SHA, subject, category, and diff stats
+
+Example:
 
 ```markdown
 # Code Diary — 2025-06-15
@@ -125,16 +77,43 @@ Example daily entry:
 ---
 ```
 
-## Scheduled Use
+Weekly and monthly reports aggregate these daily entries into higher-level summaries.
 
-The command is designed to run unattended. A single invocation handles the full pipeline — daily entry creation/merge plus aggregate report generation — so only one scheduled job is needed.
+## CLI Reference
 
-```bash
-# crontab example: run at 6pm every weekday
-0 18 * * 1-5 /usr/local/bin/code-diary --output ~/diary
+```
+code-diary [<repo-path>...] [--date <YYYY-MM-DD>] [--output <dir>]
+code-diary aggregate [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>] [--output <dir>]
 ```
 
-Running multiple times for the same date is safe: new commits are merged into the existing daily file and aggregate reports are regenerated from the latest data.
+| Argument | Description |
+|---|---|
+| `<repo-path>` | One or more repo paths (reads from config if omitted) |
+| `--date <YYYY-MM-DD>` | Date to generate the entry for (defaults to today) |
+| `--output <dir>` | Output directory (defaults to config or cwd) |
+| `-h, --help` | Show help message and exit |
+
+CLI arguments override config values. If `repos` is set in your config, you can run `code-diary` with no arguments at all.
+
+### Aggregate Subcommand
+
+Aggregate runs automatically after each `code-diary` invocation. You can also run it standalone for a broader date range:
+
+```bash
+code-diary aggregate                                  # regenerate all reports
+code-diary aggregate --from 2025-06-01 --to 2025-06-30  # specific range
+```
+
+| Argument | Description |
+|---|---|
+| `--from <YYYY-MM-DD>` | Start date (defaults to earliest diary entry) |
+| `--to <YYYY-MM-DD>` | End date (defaults to today) |
+| `--output <dir>` | Output directory (defaults to config or cwd) |
+
+## Requirements
+
+- Node.js >= 18
+- Git installed and available on `PATH`
 
 ## Development
 
