@@ -1,12 +1,41 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
-import { resolve } from "path";
 import { parseGitLog } from "../git.js";
 
-const fixture = readFileSync(
-  resolve(__dirname, "../../test/fixtures/gitLog.txt"),
-  "utf8",
-);
+const SEP = "\0\0COMMIT\0\0";
+const BEND = "\0\0BODY_END\0\0";
+
+const fixture = [
+  `${SEP}`,
+  "abc1234567890abcdef1234567890abcdef12345",
+  "feat: add user authentication",
+  `TIL: JWT tokens need to be rotated periodically`,
+  `${BEND}`,
+  "Jane Dev",
+  "2026-03-30 10:00:00 +0000",
+  " src/auth.ts | 10 +++++++---",
+  " src/utils.ts | 2 ++",
+  " 2 files changed, 9 insertions(+), 3 deletions(-)",
+  "",
+  `${SEP}`,
+  "def4567890abcdef1234567890abcdef12345678",
+  "fix(parser): handle edge case in date parsing",
+  "",
+  "Fixed a bug where dates with single-digit months were not parsed correctly.",
+  `${BEND}`,
+  "John Coder",
+  "2026-03-30 14:30:00 +0530",
+  " src/parser.ts | 5 +++--",
+  " 1 file changed, 3 insertions(+), 2 deletions(-)",
+  "",
+  `${SEP}`,
+  "789abcdef1234567890abcdef1234567890abcde",
+  "update README with new examples",
+  `${BEND}`,
+  "Jane Dev",
+  "2026-03-30 22:00:00 +0000",
+  " README.md | 20 +++++++++++++++++---",
+  " 1 file changed, 17 insertions(+), 3 deletions(-)",
+].join("\n");
 
 describe("parseGitLog", () => {
   it("parses the three-commit fixture correctly", () => {
@@ -47,13 +76,12 @@ describe("parseGitLog", () => {
   });
 
   it("throws on malformed block missing BODY_END marker", () => {
-    const bad = "---COMMIT---\nabc1234567890abcdef1234567890abcdef12345\nfeat: something";
-    expect(() => parseGitLog(bad)).toThrow("missing ---BODY_END---");
+    const bad = `${SEP}\nabc1234567890abcdef1234567890abcdef12345\nfeat: something`;
+    expect(() => parseGitLog(bad)).toThrow("BODY_END");
   });
 
   it("throws on malformed block with invalid SHA", () => {
-    const bad =
-      "---COMMIT---\nnot-a-sha\nfeat: something\n---BODY_END---\nAuthor\n2026-03-30 10:00:00 +0000";
+    const bad = `${SEP}\nnot-a-sha\nfeat: something\n${BEND}\nAuthor\n2026-03-30 10:00:00 +0000`;
     expect(() => parseGitLog(bad)).toThrow("invalid SHA");
   });
 
@@ -111,5 +139,24 @@ describe("parseGitLog", () => {
     expect(commits[1]!.deletions).toBe(2);
     expect(commits[2]!.insertions).toBe(17);
     expect(commits[2]!.deletions).toBe(3);
+  });
+
+  it("handles commit bodies containing old sentinel text without breaking", () => {
+    const tricky = [
+      `${SEP}`,
+      "aaa1111222233334444555566667777888899990",
+      "fix(git): swap ---COMMIT--- separator to lead each block",
+      "Moves ---COMMIT--- from the end and adds ---BODY_END--- markers.",
+      `${BEND}`,
+      "Dev Person",
+      "2026-03-30 10:00:00 +0000",
+      " src/git.ts | 2 +-",
+      " 1 file changed, 1 insertion(+), 1 deletion(-)",
+    ].join("\n");
+
+    const commits = parseGitLog(tricky);
+    expect(commits).toHaveLength(1);
+    expect(commits[0]!.body).toContain("---COMMIT---");
+    expect(commits[0]!.body).toContain("---BODY_END---");
   });
 });

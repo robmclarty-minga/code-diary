@@ -1,9 +1,11 @@
 import { spawnSync } from "child_process";
 import type { Commit, FileStat } from "./types/diary.js";
 
-const COMMIT_SEPARATOR = "---COMMIT---";
-const BODY_END_MARKER = "---BODY_END---";
-const GIT_FORMAT = `%H%n%s%n%b${BODY_END_MARKER}%n%an%n%ai`;
+const COMMIT_SEPARATOR = "\0\0COMMIT\0\0";
+const BODY_END_MARKER = "\0\0BODY_END\0\0";
+const GIT_FORMAT_SEPARATOR = "%x00%x00COMMIT%x00%x00";
+const GIT_FORMAT_BODY_END = "%x00%x00BODY_END%x00%x00";
+const GIT_FORMAT = `%H%n%s%n%b${GIT_FORMAT_BODY_END}%n%an%n%ai`;
 
 export const readGitLog = (repoPath: string, date: string): string => {
   const result = spawnSync(
@@ -14,7 +16,7 @@ export const readGitLog = (repoPath: string, date: string): string => {
       `--after=${date} 00:00:00`,
       `--before=${date} 23:59:59`,
       "--stat",
-      `--pretty=format:${COMMIT_SEPARATOR}%n${GIT_FORMAT}`,
+      `--pretty=format:${GIT_FORMAT_SEPARATOR}%n${GIT_FORMAT}`,
     ],
     { cwd: repoPath, encoding: "utf8" },
   );
