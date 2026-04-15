@@ -26,33 +26,6 @@ export const formatDiaryEntry = (entry) => {
     lines.push("---", "");
     return lines.join("\n");
 };
-export const findExistingEntry = (content, date) => {
-    const heading = `## ${date}`;
-    return content.split("\n").some((line) => line.trimEnd() === heading);
-};
-export const replaceEntry = (content, date, newEntry) => {
-    const lines = content.split("\n");
-    const heading = `## ${date}`;
-    const startIdx = lines.findIndex((line) => line.trimEnd() === heading);
-    if (startIdx === -1) {
-        return content;
-    }
-    let endIdx = lines.length;
-    for (let i = startIdx + 1; i < lines.length; i++) {
-        if (lines[i].startsWith("## ")) {
-            endIdx = i;
-            break;
-        }
-    }
-    const before = lines.slice(0, startIdx);
-    const after = lines.slice(endIdx);
-    return [...before, newEntry.replace(/\n$/, ""), ...after].join("\n");
-};
-export const appendEntry = (content, date, newEntry) => {
-    if (content === null) {
-        const month = date.slice(0, 7);
-        return `# Code Diary — ${month}\n\n${newEntry}`;
-    }
-    const separator = content.endsWith("\n") ? "" : "\n";
-    return `${content}${separator}${newEntry}`;
+export const formatDailyFile = (date, entryMarkdown) => {
+    return `# Code Diary — ${date}\n\n${entryMarkdown}`;
 };

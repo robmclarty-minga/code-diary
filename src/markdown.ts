@@ -38,45 +38,6 @@ export const formatDiaryEntry = (entry: DiaryEntry): string => {
   return lines.join("\n");
 };
 
-export const findExistingEntry = (content: string, date: string): boolean => {
-  const heading = `## ${date}`;
-  return content.split("\n").some((line) => line.trimEnd() === heading);
-};
-
-export const replaceEntry = (
-  content: string,
-  date: string,
-  newEntry: string,
-): string => {
-  const lines = content.split("\n");
-  const heading = `## ${date}`;
-  const startIdx = lines.findIndex((line) => line.trimEnd() === heading);
-  if (startIdx === -1) {
-    return content;
-  }
-
-  let endIdx = lines.length;
-  for (let i = startIdx + 1; i < lines.length; i++) {
-    if (lines[i]!.startsWith("## ")) {
-      endIdx = i;
-      break;
-    }
-  }
-
-  const before = lines.slice(0, startIdx);
-  const after = lines.slice(endIdx);
-  return [...before, newEntry.replace(/\n$/, ""), ...after].join("\n");
-};
-
-export const appendEntry = (
-  content: string | null,
-  date: string,
-  newEntry: string,
-): string => {
-  if (content === null) {
-    const month = date.slice(0, 7);
-    return `# Code Diary — ${month}\n\n${newEntry}`;
-  }
-  const separator = content.endsWith("\n") ? "" : "\n";
-  return `${content}${separator}${newEntry}`;
+export const formatDailyFile = (date: string, entryMarkdown: string): string => {
+  return `# Code Diary — ${date}\n\n${entryMarkdown}`;
 };

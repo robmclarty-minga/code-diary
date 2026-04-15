@@ -1,23 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
-import { join } from "path";
 import {
   formatDiaryEntry,
-  findExistingEntry,
-  replaceEntry,
-  appendEntry,
+  formatDailyFile,
 } from "../markdown.js";
 import type {
   DiaryEntry,
   CategorizedCommit,
-  RepoEntry,
   TilItem,
 } from "../types/diary.js";
-
-const fixtureContent = readFileSync(
-  join(__dirname, "../../test/fixtures/diaryMonth.md"),
-  "utf8",
-);
 
 const makeCommit = (overrides: Partial<CategorizedCommit> = {}): CategorizedCommit => ({
   sha: "abc1234567890abcdef1234567890abcdef12345",
@@ -172,50 +162,19 @@ describe("formatDiaryEntry", () => {
   });
 });
 
-describe("findExistingEntry", () => {
-  it("returns true when date heading is present in fixture", () => {
-    expect(findExistingEntry(fixtureContent, "2026-03-28")).toBe(true);
-  });
+describe("formatDailyFile", () => {
+  it("wraps entry markdown with date-based header", () => {
+    const entry = "## 2026-03-30\n\n### my-project\n\n- `abc1234` feat: add — feat (+1 / -0)\n\n---\n";
+    const result = formatDailyFile("2026-03-30", entry);
 
-  it("returns false when date heading is absent", () => {
-    expect(findExistingEntry(fixtureContent, "2026-03-01")).toBe(false);
-  });
-});
-
-describe("replaceEntry", () => {
-  it("replaces an existing entry and preserves other entries", () => {
-    const newEntry = "## 2026-03-28\n\n### replaced-repo\n\n- `fff6666` chore: replaced — chore (+1 / -1)\n\n---\n";
-
-    const result = replaceEntry(fixtureContent, "2026-03-28", newEntry);
-
-    expect(result).toContain("### replaced-repo");
-    expect(result).toContain("chore: replaced");
-    expect(result).not.toContain("aaa1111");
-    expect(result).not.toContain("bbb2222");
-    // Second entry preserved
-    expect(result).toContain("## 2026-03-29");
-    expect(result).toContain("ccc3333");
-  });
-});
-
-describe("appendEntry", () => {
-  it("creates file header for new files when content is null", () => {
-    const newEntry = "## 2026-03-30\n\n### my-project\n\n- `abc1234` feat: add — feat (+1 / -0)\n\n---\n";
-
-    const result = appendEntry(null, "2026-03-30", newEntry);
-
-    expect(result).toContain("# Code Diary — 2026-03");
+    expect(result).toContain("# Code Diary — 2026-03-30");
     expect(result).toContain("## 2026-03-30");
     expect(result).toContain("abc1234");
   });
 
-  it("appends entry to existing content", () => {
-    const newEntry = "## 2026-03-30\n\n### my-project\n\n- `abc1234` feat: new — feat (+1 / -0)\n\n---\n";
+  it("uses full date in header, not month slug", () => {
+    const result = formatDailyFile("2026-04-15", "## 2026-04-15\n\ncontent\n");
 
-    const result = appendEntry(fixtureContent, "2026-03-30", newEntry);
-
-    expect(result).toContain("# Code Diary — 2026-03");
-    expect(result).toContain("## 2026-03-28");
-    expect(result).toContain("## 2026-03-30");
+    expect(result.startsWith("# Code Diary — 2026-04-15")).toBe(true);
   });
 });
