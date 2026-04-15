@@ -1,5 +1,5 @@
 import { resolve, join } from "path";
-import { loadSettings } from "./config.js";
+import { loadSettings, expandTilde } from "./config.js";
 import { isValidDate } from "./cli.js";
 import { findDailyFiles, generateReports } from "./aggregate.js";
 import { parseDailyFile } from "./parseDiary.js";
@@ -61,7 +61,7 @@ export const parseAggregateArgs = (argv) => {
     }
     const settings = loadSettings();
     const resolvedDir = outputDir ?? settings["output-dir"] ?? process.cwd();
-    const diaryDir = join(resolve(resolvedDir), "diary");
+    const diaryDir = join(resolve(expandTilde(resolvedDir)), "diary");
     const today = new Date().toLocaleDateString("en-CA");
     return {
         diaryDir,

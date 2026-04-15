@@ -2,6 +2,15 @@ import { homedir } from "os";
 import { join } from "path";
 import { fileExists, readFile } from "./fileIO.js";
 const CONFIG_PATH = join(homedir(), ".code-diary", "settings.json");
+export const expandTilde = (p) => {
+    if (p === "~") {
+        return homedir();
+    }
+    if (p.startsWith("~/")) {
+        return join(homedir(), p.slice(2));
+    }
+    return p;
+};
 export const loadSettings = () => {
     if (!fileExists(CONFIG_PATH)) {
         return {};
@@ -34,10 +43,12 @@ export const loadSettings = () => {
     return parsed;
 };
 export const resolveArgs = (cliArgs, settings) => {
-    const repoPaths = cliArgs.repoPaths.length > 0
+    const rawRepoPaths = cliArgs.repoPaths.length > 0
         ? cliArgs.repoPaths
         : settings.repos ?? [];
-    const outputDir = cliArgs.outputDir ?? settings["output-dir"] ?? process.cwd();
+    const repoPaths = rawRepoPaths.map(expandTilde);
+    const rawOutputDir = cliArgs.outputDir ?? settings["output-dir"] ?? process.cwd();
+    const outputDir = expandTilde(rawOutputDir);
     return {
         repoPaths,
         date: cliArgs.date,
