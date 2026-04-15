@@ -2,6 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   formatDiaryEntry,
   formatDailyFile,
+  extractRepoSections,
+  extractExistingTilItems,
+  mergeDailyContent,
 } from "../markdown.js";
 import type {
   DiaryEntry,
@@ -176,5 +179,158 @@ describe("formatDailyFile", () => {
     const result = formatDailyFile("2026-04-15", "## 2026-04-15\n\ncontent\n");
 
     expect(result.startsWith("# Code Diary — 2026-04-15")).toBe(true);
+  });
+});
+
+const EXISTING_DAILY = [
+  "# Code Diary — 2026-04-15",
+  "",
+  "## 2026-04-15",
+  "",
+  "### Today I Learned",
+  "- Arrays are zero-indexed (`abc1234`, api)",
+  "- Maps are cool (`def5678`, web)",
+  "",
+  "### api",
+  "",
+  "- `abc1234` feat: add thing — feat (+5 / -1)",
+  "",
+  "### web",
+  "",
+  "- `def5678` docs: update readme — docs (+10 / -2)",
+  "",
+  "---",
+  "",
+].join("\n");
+
+describe("extractRepoSections", () => {
+  it("extracts each repo section by name", () => {
+    const sections = extractRepoSections(EXISTING_DAILY);
+
+    expect(sections.size).toBe(2);
+    expect(sections.has("api")).toBe(true);
+    expect(sections.has("web")).toBe(true);
+    expect(sections.get("api")).toContain("### api");
+    expect(sections.get("api")).toContain("`abc1234`");
+    expect(sections.get("web")).toContain("### web");
+    expect(sections.get("web")).toContain("`def5678`");
+  });
+
+  it("excludes Today I Learned heading", () => {
+    const sections = extractRepoSections(EXISTING_DAILY);
+    expect(sections.has("Today I Learned")).toBe(false);
+  });
+
+  it("returns empty map for content with no repo sections", () => {
+    const sections = extractRepoSections("# Code Diary — 2026-04-15\n\n## 2026-04-15\n\n---\n");
+    expect(sections.size).toBe(0);
+  });
+});
+
+describe("extractExistingTilItems", () => {
+  it("extracts TIL items with text, sha, and repoName", () => {
+    const items = extractExistingTilItems(EXISTING_DAILY);
+
+    expect(items).toHaveLength(2);
+    expect(items[0]).toEqual({ text: "Arrays are zero-indexed", sha: "abc1234", repoName: "api" });
+    expect(items[1]).toEqual({ text: "Maps are cool", sha: "def5678", repoName: "web" });
+  });
+
+  it("returns empty array when no TIL section", () => {
+    const content = "# Code Diary — 2026-04-15\n\n## 2026-04-15\n\n### api\n\n- `abc1234` feat: add — feat (+1 / -0)\n\n---\n";
+    expect(extractExistingTilItems(content)).toEqual([]);
+  });
+});
+
+describe("mergeDailyContent", () => {
+  it("preserves repo sections not covered by the new run", () => {
+    const newEntry: DiaryEntry = {
+      date: "2026-04-15",
+      repos: [{
+        repoPath: "/repos/api",
+        repoName: "api",
+        commits: [makeCommit({
+          sha: "aaa1111222233334444555566667777888899990",
+          subject: "feat: updated thing",
+          insertions: 8,
+          deletions: 2,
+          category: "feat",
+        })],
+      }],
+      tilItems: [],
+    };
+
+    const result = mergeDailyContent(EXISTING_DAILY, newEntry);
+
+    expect(result).toContain("### api");
+    expect(result).toContain("feat: updated thing");
+    expect(result).toContain("### web");
+    expect(result).toContain("`def5678`");
+  });
+
+  it("merges TIL items from preserved repos", () => {
+    const newEntry: DiaryEntry = {
+      date: "2026-04-15",
+      repos: [{
+        repoPath: "/repos/api",
+        repoName: "api",
+        commits: [makeCommit({ tilItems: ["New TIL from api"] })],
+      }],
+      tilItems: [{ text: "New TIL from api", sha: "abc1234", repoName: "api" }],
+    };
+
+    const result = mergeDailyContent(EXISTING_DAILY, newEntry);
+
+    expect(result).toContain("### Today I Learned");
+    expect(result).toContain("New TIL from api");
+    expect(result).toContain("Maps are cool");
+    expect(result).not.toContain("Arrays are zero-indexed");
+  });
+
+  it("deduplicates TIL items by text", () => {
+    const newEntry: DiaryEntry = {
+      date: "2026-04-15",
+      repos: [{
+        repoPath: "/repos/api",
+        repoName: "api",
+        commits: [makeCommit()],
+      }, {
+        repoPath: "/repos/web",
+        repoName: "web",
+        commits: [makeCommit()],
+      }],
+      tilItems: [{ text: "Maps are cool", sha: "new1234", repoName: "web" }],
+    };
+
+    const result = mergeDailyContent(EXISTING_DAILY, newEntry);
+    const tilMatches = result.match(/Maps are cool/g);
+    expect(tilMatches).toHaveLength(1);
+  });
+
+  it("produces valid daily file when no repos to preserve", () => {
+    const newEntry: DiaryEntry = {
+      date: "2026-04-15",
+      repos: [{
+        repoPath: "/repos/api",
+        repoName: "api",
+        commits: [makeCommit()],
+      }, {
+        repoPath: "/repos/web",
+        repoName: "web",
+        commits: [makeCommit({
+          sha: "bbb2222333344445555666677778888999900001",
+          subject: "docs: update",
+          category: "docs",
+        })],
+      }],
+      tilItems: [],
+    };
+
+    const result = mergeDailyContent(EXISTING_DAILY, newEntry);
+
+    expect(result).toContain("# Code Diary — 2026-04-15");
+    expect(result).toContain("### api");
+    expect(result).toContain("### web");
+    expect(result).toContain("---");
   });
 });

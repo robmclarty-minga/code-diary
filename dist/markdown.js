@@ -29,3 +29,97 @@ export const formatDiaryEntry = (entry) => {
 export const formatDailyFile = (date, entryMarkdown) => {
     return `# Code Diary — ${date}\n\n${entryMarkdown}`;
 };
+const REPO_HEADING_RE = /^### (.+)$/;
+const TIL_ITEM_RE = /^- (.+) \(`([a-f0-9]{7})`, (.+)\)$/;
+const trimTrailingBlanks = (lines) => {
+    let end = lines.length;
+    while (end > 0 && lines[end - 1].trim() === "") {
+        end--;
+    }
+    return lines.slice(0, end).join("\n");
+};
+export const extractRepoSections = (content) => {
+    const sections = new Map();
+    const lines = content.split("\n");
+    let currentRepo = null;
+    let currentLines = [];
+    for (const line of lines) {
+        const match = line.match(REPO_HEADING_RE);
+        if (match && match[1] !== "Today I Learned") {
+            if (currentRepo) {
+                sections.set(currentRepo, trimTrailingBlanks(currentLines));
+            }
+            currentRepo = match[1];
+            currentLines = [line];
+            continue;
+        }
+        if (currentRepo && (line === "---" || (match && match[1] === "Today I Learned"))) {
+            sections.set(currentRepo, trimTrailingBlanks(currentLines));
+            currentRepo = null;
+            currentLines = [];
+            continue;
+        }
+        if (currentRepo) {
+            currentLines.push(line);
+        }
+    }
+    if (currentRepo) {
+        sections.set(currentRepo, trimTrailingBlanks(currentLines));
+    }
+    return sections;
+};
+export const extractExistingTilItems = (content) => {
+    const items = [];
+    const lines = content.split("\n");
+    let inTil = false;
+    for (const line of lines) {
+        if (line === "### Today I Learned") {
+            inTil = true;
+            continue;
+        }
+        if (inTil && (line.startsWith("### ") || line.startsWith("## "))) {
+            break;
+        }
+        if (inTil) {
+            const match = line.match(TIL_ITEM_RE);
+            if (match) {
+                items.push({ text: match[1], sha: match[2], repoName: match[3] });
+            }
+        }
+    }
+    return items;
+};
+export const mergeDailyContent = (existingContent, newEntry) => {
+    const newRepoNames = new Set(newEntry.repos.map((r) => r.repoName));
+    const existingRepoSections = extractRepoSections(existingContent);
+    const preservedSections = [];
+    for (const [name, section] of existingRepoSections) {
+        if (!newRepoNames.has(name)) {
+            preservedSections.push(section);
+        }
+    }
+    const existingTilItems = extractExistingTilItems(existingContent);
+    const preservedTilItems = existingTilItems.filter((item) => !newRepoNames.has(item.repoName));
+    const seen = new Set(newEntry.tilItems.map((t) => t.text));
+    const mergedTilItems = [...newEntry.tilItems];
+    for (const item of preservedTilItems) {
+        if (!seen.has(item.text)) {
+            seen.add(item.text);
+            mergedTilItems.push(item);
+        }
+    }
+    const mergedEntry = {
+        ...newEntry,
+        tilItems: mergedTilItems,
+    };
+    let entryMarkdown = formatDiaryEntry(mergedEntry);
+    if (preservedSections.length > 0) {
+        const lastSep = entryMarkdown.lastIndexOf("---\n");
+        if (lastSep > 0) {
+            const before = entryMarkdown.slice(0, lastSep);
+            const after = entryMarkdown.slice(lastSep);
+            entryMarkdown = before + preservedSections.join("\n\n") + "\n\n" + after;
+        }
+    }
+    return formatDailyFile(newEntry.date, entryMarkdown);
+};
