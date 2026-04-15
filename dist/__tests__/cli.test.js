@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { parseArgs, isValidDate, validateRepoPaths, buildOutputPath, parseSince, computeStartDate, dateRange, } from "../cli.js";
+import { parseArgs, isValidDate, validateRepoPaths, buildOutputPath, parseSince, computeStartDate, dateRange, resolveAuthorsForRepo, } from "../cli.js";
 import { existsSync } from "fs";
 import { join, resolve } from "path";
 vi.mock("fs", async () => {
@@ -235,5 +235,36 @@ describe("validateRepoPaths", () => {
         });
         expect(() => validateRepoPaths(["/bad", "/good"])).toThrow("process.exit called");
         expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining('"/bad"'));
+    });
+});
+describe("resolveAuthorsForRepo", () => {
+    it("returns settings authors when provided", () => {
+        const warn = vi.fn();
+        const getEmail = vi.fn(() => "unused@x.com");
+        const result = resolveAuthorsForRepo("/repo", ["a@x.com", "b@y.com"], warn, getEmail);
+        expect(result).toEqual(["a@x.com", "b@y.com"]);
+        expect(getEmail).not.toHaveBeenCalled();
+        expect(warn).not.toHaveBeenCalled();
+    });
+    it("falls back to per-repo user.email when settings has no authors", () => {
+        const warn = vi.fn();
+        const getEmail = vi.fn(() => "me@minga.io");
+        const result = resolveAuthorsForRepo("/repo", undefined, warn, getEmail);
+        expect(result).toEqual(["me@minga.io"]);
+        expect(getEmail).toHaveBeenCalledWith("/repo");
+        expect(warn).not.toHaveBeenCalled();
+    });
+    it("treats empty settings array as missing and falls back", () => {
+        const warn = vi.fn();
+        const getEmail = vi.fn(() => "me@minga.io");
+        const result = resolveAuthorsForRepo("/repo", [], warn, getEmail);
+        expect(result).toEqual(["me@minga.io"]);
+    });
+    it("warns and returns undefined when no email is configured", () => {
+        const warn = vi.fn();
+        const getEmail = vi.fn(() => undefined);
+        const result = resolveAuthorsForRepo("/repo", undefined, warn, getEmail);
+        expect(result).toBeUndefined();
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining("no git user.email configured for /repo"));
     });
 });

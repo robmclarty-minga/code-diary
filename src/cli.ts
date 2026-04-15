@@ -1,7 +1,7 @@
 import { resolve, join } from "path";
 import { existsSync } from "fs";
 import type { CliArgs } from "./types/diary.js";
-import { readGitLog, parseGitLog } from "./git.js";
+import { readGitLog, parseGitLog, getAuthorEmail } from "./git.js";
 import { buildRepoEntry, buildDiaryEntry } from "./categorize.js";
 import {
   formatDiaryEntry,
@@ -41,6 +41,8 @@ Config:
   Settings are read from ~/.code-diary/settings.json (if it exists):
     "output-dir"  (string)    Default output directory
     "repos"       (string[])  Default repo paths (used when none given on CLI)
+    "authors"     (string[])  Email patterns identifying you across repos. If
+                              omitted, each repo's local git user.email is used.
 
 Examples:
   code-diary ./my-project
@@ -208,14 +210,40 @@ const aggregateMonth = (outputDir: string, date: string): void => {
   }
 };
 
+export const resolveAuthorsForRepo = (
+  repoPath: string,
+  settingsAuthors: string[] | undefined,
+  warn: (msg: string) => void,
+  getEmail: (repoPath: string) => string | undefined = getAuthorEmail,
+): string[] | undefined => {
+  if (settingsAuthors && settingsAuthors.length > 0) {
+    return settingsAuthors;
+  }
+  const email = getEmail(repoPath);
+  if (email) {
+    return [email];
+  }
+  warn(
+    `Warning: no git user.email configured for ${repoPath}; including all authors.\n`,
+  );
+  return undefined;
+};
+
 const writeEntryForDate = (
   outputDir: string,
   date: string,
   repoPaths: string[],
+  settingsAuthors: string[] | undefined,
 ): boolean => {
   const repoEntries = repoPaths.map((repoPath) => {
     const absPath = resolve(repoPath);
-    const raw = readGitLog(absPath, date);
+    const authors = resolveAuthorsForRepo(
+      absPath,
+      settingsAuthors,
+      (msg) => process.stderr.write(msg),
+      getAuthorEmail,
+    );
+    const raw = readGitLog(absPath, date, authors);
     const commits = parseGitLog(raw);
     return buildRepoEntry(absPath, commits);
   });
@@ -251,7 +279,7 @@ export const run = async (argv: string[]): Promise<void> => {
   const cliArgs = parseArgs(argv);
   const settings = loadSettings();
   const resolved = resolveArgs(cliArgs, settings);
-  const { repoPaths, date, outputDir } = resolved;
+  const { repoPaths, date, outputDir, authors } = resolved;
 
   if (repoPaths.length === 0) {
     process.stderr.write(USAGE);
@@ -266,7 +294,7 @@ export const run = async (argv: string[]): Promise<void> => {
 
   let wroteAny = false;
   for (const d of dates) {
-    const wrote = writeEntryForDate(outputDir, d, repoPaths);
+    const wrote = writeEntryForDate(outputDir, d, repoPaths, authors);
     if (wrote) {
       wroteAny = true;
     } else if (!cliArgs.since) {
