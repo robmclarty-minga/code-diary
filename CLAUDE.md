@@ -68,7 +68,7 @@ Optional settings file at `~/.code-diary/settings.json`:
 ## Output Structure
 
 ```
-diary/
+<output-dir>/
   daily/              # Daily entries (code-diary-YYYY-MM-DD.md)
   weekly/             # Weekly reports (code-diary-YYYY-MM-W#.md)
   monthly/            # Monthly reports (code-diary-YYYY-MM.md)

@@ -176,11 +176,11 @@ export const validateRepoPaths = (paths: string[]): void => {
 };
 
 export const buildOutputPath = (outputDir: string, date: string): string => {
-  return join(resolve(outputDir), "diary", "daily", `code-diary-${date}.md`);
+  return join(resolve(outputDir), "daily", `code-diary-${date}.md`);
 };
 
 const aggregateMonth = (outputDir: string, date: string): void => {
-  const diaryDir = join(resolve(outputDir), "diary");
+  const diaryDir = resolve(outputDir);
   const dailyFiles = findDailyFiles(join(diaryDir, "daily"));
   if (dailyFiles.length === 0) {
     return;

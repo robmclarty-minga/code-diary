@@ -65,7 +65,7 @@ export const parseAggregateArgs = (argv: string[]): AggregateArgs => {
 
   const settings = loadSettings();
   const resolvedDir = outputDir ?? settings["output-dir"] ?? process.cwd();
-  const diaryDir = join(resolve(expandTilde(resolvedDir)), "diary");
+  const diaryDir = resolve(expandTilde(resolvedDir));
 
   const today = new Date().toLocaleDateString("en-CA");
 

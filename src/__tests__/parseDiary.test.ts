@@ -75,7 +75,7 @@ describe("extractDateFromFilename", () => {
   });
 
   it("extracts date from full path", () => {
-    expect(extractDateFromFilename("/diary/daily/code-diary-2026-04-15.md")).toBe("2026-04-15");
+    expect(extractDateFromFilename("/daily/code-diary-2026-04-15.md")).toBe("2026-04-15");
   });
 
   it("returns empty string for non-matching filename", () => {

@@ -251,7 +251,7 @@ describe("dateRange", () => {
 describe("buildOutputPath", () => {
   it("produces daily file path with code-diary prefix", () => {
     const result = buildOutputPath("/out", "2026-03-30");
-    expect(result).toBe(join(resolve("/out"), "diary", "daily", "code-diary-2026-03-30.md"));
+    expect(result).toBe(join(resolve("/out"), "daily", "code-diary-2026-03-30.md"));
   });
 });
 
