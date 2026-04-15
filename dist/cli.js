@@ -3,26 +3,40 @@ import { resolve, join } from "path";
 import { existsSync } from "fs";
 import { readGitLog, parseGitLog } from "./git.js";
 import { buildRepoEntry, buildDiaryEntry } from "./categorize.js";
-import { formatDiaryEntry, findExistingEntry, replaceEntry, appendEntry, } from "./markdown.js";
-import { readFile, writeFile, fileExists } from "./fileIO.js";
-const USAGE = `Usage: code-diary <repo-path> [<repo-path>...] [--date <YYYY-MM-DD>] [--output <dir>]\n`;
-const HELP = `Usage: code-diary <repo-path> [<repo-path>...] [options]
+import { formatDiaryEntry, formatDailyFile, } from "./markdown.js";
+import { writeFile, fileExists } from "./fileIO.js";
+import { loadSettings, resolveArgs } from "./config.js";
+import { runAggregate } from "./aggregateCli.js";
+const USAGE = `Usage: code-diary [<repo-path>...] [--date <YYYY-MM-DD>] [--output <dir>]
+       code-diary aggregate [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>] [--output <dir>]\n`;
+const HELP = `Usage: code-diary [<repo-path>...] [options]
+       code-diary aggregate [options]
 
 Read git log output from one or more repos, categorize commits for a given
-date, and append a structured markdown entry to a monthly diary file.
+date, and write a structured markdown entry to a daily diary file.
 
 Arguments:
-  <repo-path>          Path to a git repository (at least one required)
+  <repo-path>          Path to a git repository (reads from config if omitted)
+
+Subcommands:
+  aggregate            Generate weekly and monthly reports from daily entries
 
 Options:
   --date <YYYY-MM-DD>  Date to generate the entry for (default: today)
-  --output <dir>       Directory for diary output (default: current directory)
+  --output <dir>       Directory for diary output (default: config or cwd)
   -h, --help           Show this help message and exit
+
+Config:
+  Settings are read from ~/.code-diary/settings.json (if it exists):
+    "output-dir"  (string)    Default output directory
+    "repos"       (string[])  Default repo paths (used when none given on CLI)
 
 Examples:
   code-diary ./my-project
   code-diary ~/repos/api ~/repos/web --date 2026-03-30
   code-diary . --output ~/diary
+  code-diary                          # uses repos from config
+  code-diary aggregate --from 2026-03-01 --to 2026-03-31
 `;
 export const isValidDate = (dateStr) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
@@ -63,10 +77,6 @@ export const parseArgs = (argv) => {
             i += 1;
         }
     }
-    if (repoPaths.length === 0) {
-        process.stderr.write(USAGE);
-        process.exit(2);
-    }
     if (date === undefined) {
         date = new Date().toLocaleDateString("en-CA");
     }
@@ -77,7 +87,7 @@ export const parseArgs = (argv) => {
     return {
         repoPaths,
         date,
-        outputDir: outputDir ?? process.cwd(),
+        outputDir,
     };
 };
 export const validateRepoPaths = (paths) => {
@@ -106,9 +116,22 @@ export const promptReplace = (date) => {
         });
     });
 };
+export const buildOutputPath = (outputDir, date) => {
+    return join(resolve(outputDir), "diary", "daily", `code-diary-${date}.md`);
+};
 export const run = async (argv) => {
+    const args = argv.slice(2);
+    if (args[0] === "aggregate") {
+        return runAggregate(argv);
+    }
     const cliArgs = parseArgs(argv);
-    const { repoPaths, date, outputDir } = cliArgs;
+    const settings = loadSettings();
+    const resolved = resolveArgs(cliArgs, settings);
+    const { repoPaths, date, outputDir } = resolved;
+    if (repoPaths.length === 0) {
+        process.stderr.write(USAGE);
+        process.exit(2);
+    }
     validateRepoPaths(repoPaths);
     const repoEntries = repoPaths.map((repoPath) => {
         const absPath = resolve(repoPath);
@@ -123,22 +146,14 @@ export const run = async (argv) => {
     }
     const diaryEntry = buildDiaryEntry(date, nonEmpty);
     const markdown = formatDiaryEntry(diaryEntry);
-    const outputPath = join(resolve(outputDir), "diary", `${date.slice(0, 7)}.md`);
-    let existingContent = null;
+    const outputPath = buildOutputPath(outputDir, date);
     if (fileExists(outputPath)) {
-        existingContent = readFile(outputPath);
-    }
-    if (existingContent !== null && findExistingEntry(existingContent, date)) {
         const shouldReplace = await promptReplace(date);
         if (!shouldReplace) {
             process.exit(1);
         }
-        const updated = replaceEntry(existingContent, date, markdown);
-        writeFile(outputPath, updated);
     }
-    else {
-        const content = appendEntry(existingContent, date, markdown);
-        writeFile(outputPath, content);
-    }
+    const content = formatDailyFile(date, markdown);
+    writeFile(outputPath, content);
     process.stdout.write(`Wrote diary entry for ${date} to ${outputPath}\n`);
 };

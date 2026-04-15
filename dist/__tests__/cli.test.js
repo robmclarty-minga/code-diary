@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { parseArgs, isValidDate, validateRepoPaths } from "../cli.js";
+import { parseArgs, isValidDate, validateRepoPaths, buildOutputPath } from "../cli.js";
 import { existsSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 vi.mock("fs", async () => {
     const actual = await vi.importActual("fs");
     return { ...actual, existsSync: vi.fn() };
@@ -47,7 +47,7 @@ describe("parseArgs", () => {
         const result = parseArgs(["node", "script", "/path/to/repo"]);
         expect(result.repoPaths).toEqual(["/path/to/repo"]);
         expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-        expect(result.outputDir).toBe(process.cwd());
+        expect(result.outputDir).toBeUndefined();
     });
     it("parses multiple repos with all flags", () => {
         const result = parseArgs([
@@ -91,10 +91,10 @@ describe("parseArgs", () => {
         expect(process.exit).toHaveBeenCalledWith(0);
         expect(process.stdout.write).toHaveBeenCalledWith(expect.stringContaining("Usage:"));
     });
-    it("exits 2 when no repos provided", () => {
-        expect(() => parseArgs(["node", "script"])).toThrow("process.exit called");
-        expect(process.exit).toHaveBeenCalledWith(2);
-        expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining("Usage:"));
+    it("allows empty repos (config may supply them)", () => {
+        const result = parseArgs(["node", "script", "--date", "2026-03-30"]);
+        expect(result.repoPaths).toEqual([]);
+        expect(result.date).toBe("2026-03-30");
     });
     it("exits 2 for invalid date format", () => {
         expect(() => parseArgs(["node", "script", "/repo", "--date", "bad-date"])).toThrow("process.exit called");
@@ -108,6 +108,12 @@ describe("parseArgs", () => {
     it("exits 2 for Feb 29 in non-leap year", () => {
         expect(() => parseArgs(["node", "script", "/repo", "--date", "2026-02-29"])).toThrow("process.exit called");
         expect(process.exit).toHaveBeenCalledWith(2);
+    });
+});
+describe("buildOutputPath", () => {
+    it("produces daily file path with code-diary prefix", () => {
+        const result = buildOutputPath("/out", "2026-03-30");
+        expect(result).toBe(join(resolve("/out"), "diary", "daily", "code-diary-2026-03-30.md"));
     });
 });
 describe("validateRepoPaths", () => {
