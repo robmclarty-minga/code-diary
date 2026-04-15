@@ -5,6 +5,16 @@ import { fileExists, readFile } from "./fileIO.js";
 
 const CONFIG_PATH = join(homedir(), ".code-diary", "settings.json");
 
+export const expandTilde = (p: string): string => {
+  if (p === "~") {
+    return homedir();
+  }
+  if (p.startsWith("~/")) {
+    return join(homedir(), p.slice(2));
+  }
+  return p;
+};
+
 export const loadSettings = (): Settings => {
   if (!fileExists(CONFIG_PATH)) {
     return {};
@@ -43,11 +53,13 @@ export const loadSettings = (): Settings => {
 };
 
 export const resolveArgs = (cliArgs: CliArgs, settings: Settings): ResolvedArgs => {
-  const repoPaths = cliArgs.repoPaths.length > 0
+  const rawRepoPaths = cliArgs.repoPaths.length > 0
     ? cliArgs.repoPaths
     : settings.repos ?? [];
+  const repoPaths = rawRepoPaths.map(expandTilde);
 
-  const outputDir = cliArgs.outputDir ?? settings["output-dir"] ?? process.cwd();
+  const rawOutputDir = cliArgs.outputDir ?? settings["output-dir"] ?? process.cwd();
+  const outputDir = expandTilde(rawOutputDir);
 
   return {
     repoPaths,
