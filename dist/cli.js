@@ -1,12 +1,13 @@
-import { createInterface } from "readline";
 import { resolve, join } from "path";
 import { existsSync } from "fs";
 import { readGitLog, parseGitLog } from "./git.js";
 import { buildRepoEntry, buildDiaryEntry } from "./categorize.js";
-import { formatDiaryEntry, formatDailyFile, } from "./markdown.js";
-import { writeFile, fileExists } from "./fileIO.js";
+import { formatDiaryEntry, formatDailyFile, mergeDailyContent, } from "./markdown.js";
+import { writeFile, fileExists, readFile } from "./fileIO.js";
 import { loadSettings, resolveArgs } from "./config.js";
 import { runAggregate } from "./aggregateCli.js";
+import { findDailyFiles, generateReports } from "./aggregate.js";
+import { parseDailyFile } from "./parseDiary.js";
 const USAGE = `Usage: code-diary [<repo-path>...] [--date <YYYY-MM-DD>] [--output <dir>]
        code-diary aggregate [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>] [--output <dir>]\n`;
 const HELP = `Usage: code-diary [<repo-path>...] [options]
@@ -103,21 +104,34 @@ export const validateRepoPaths = (paths) => {
         }
     }
 };
-export const promptReplace = (date) => {
-    return new Promise((res) => {
-        if (!process.stdin.isTTY) {
-            res(false);
-            return;
-        }
-        const rl = createInterface({ input: process.stdin, output: process.stdout });
-        rl.question(`An entry for ${date} already exists. Replace it? [y/N] `, (answer) => {
-            rl.close();
-            res(answer === "y" || answer === "Y");
-        });
-    });
-};
 export const buildOutputPath = (outputDir, date) => {
     return join(resolve(outputDir), "diary", "daily", `code-diary-${date}.md`);
+};
+const aggregateMonth = (outputDir, date) => {
+    const diaryDir = join(resolve(outputDir), "diary");
+    const dailyFiles = findDailyFiles(join(diaryDir, "daily"));
+    if (dailyFiles.length === 0) {
+        return;
+    }
+    const month = date.slice(0, 7);
+    const days = dailyFiles
+        .map((filePath) => parseDailyFile(readFile(filePath)))
+        .filter((day) => day.date.startsWith(month));
+    if (days.length === 0) {
+        return;
+    }
+    days.sort((a, b) => a.date.localeCompare(b.date));
+    const { weeklyCount, monthlyCount } = generateReports(diaryDir, days);
+    const parts = [];
+    if (weeklyCount > 0) {
+        parts.push(`${weeklyCount} weekly`);
+    }
+    if (monthlyCount > 0) {
+        parts.push(`${monthlyCount} monthly`);
+    }
+    if (parts.length > 0) {
+        process.stdout.write(`Updated ${parts.join(" and ")} report(s).\n`);
+    }
 };
 export const run = async (argv) => {
     const args = argv.slice(2);
@@ -140,20 +154,23 @@ export const run = async (argv) => {
         return buildRepoEntry(absPath, commits);
     });
     const nonEmpty = repoEntries.filter((r) => r.commits.length > 0);
-    if (nonEmpty.length === 0) {
-        process.stdout.write(`No commits found for ${date}.\n`);
-        return;
-    }
-    const diaryEntry = buildDiaryEntry(date, nonEmpty);
-    const markdown = formatDiaryEntry(diaryEntry);
     const outputPath = buildOutputPath(outputDir, date);
-    if (fileExists(outputPath)) {
-        const shouldReplace = await promptReplace(date);
-        if (!shouldReplace) {
-            process.exit(1);
+    if (nonEmpty.length > 0) {
+        const diaryEntry = buildDiaryEntry(date, nonEmpty);
+        let content;
+        if (fileExists(outputPath)) {
+            const existingContent = readFile(outputPath);
+            content = mergeDailyContent(existingContent, diaryEntry);
         }
+        else {
+            const markdown = formatDiaryEntry(diaryEntry);
+            content = formatDailyFile(date, markdown);
+        }
+        writeFile(outputPath, content);
+        process.stdout.write(`Wrote diary entry for ${date} to ${outputPath}\n`);
     }
-    const content = formatDailyFile(date, markdown);
-    writeFile(outputPath, content);
-    process.stdout.write(`Wrote diary entry for ${date} to ${outputPath}\n`);
+    else {
+        process.stdout.write(`No commits found for ${date}.\n`);
+    }
+    aggregateMonth(outputDir, date);
 };
