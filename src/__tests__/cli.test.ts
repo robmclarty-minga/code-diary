@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { parseArgs, isValidDate, validateRepoPaths, buildOutputPath } from "../cli.js";
+import {
+  parseArgs,
+  isValidDate,
+  validateRepoPaths,
+  buildOutputPath,
+  parseSince,
+  computeStartDate,
+  dateRange,
+} from "../cli.js";
 import { existsSync } from "fs";
 import { join, resolve } from "path";
 
@@ -137,6 +145,105 @@ describe("parseArgs", () => {
       parseArgs(["node", "script", "/repo", "--date", "2026-02-29"]),
     ).toThrow("process.exit called");
     expect(process.exit).toHaveBeenCalledWith(2);
+  });
+
+  it("accepts a valid --since value", () => {
+    const result = parseArgs(["node", "script", "/repo", "--since", "2w"]);
+    expect(result.since).toBe("2w");
+  });
+
+  it("defaults since to undefined", () => {
+    const result = parseArgs(["node", "script", "/repo"]);
+    expect(result.since).toBeUndefined();
+  });
+
+  it("exits 2 for malformed --since", () => {
+    expect(() =>
+      parseArgs(["node", "script", "/repo", "--since", "2x"]),
+    ).toThrow("process.exit called");
+    expect(process.exit).toHaveBeenCalledWith(2);
+    expect(process.stderr.write).toHaveBeenCalledWith(
+      expect.stringContaining("--since must be"),
+    );
+  });
+});
+
+describe("parseSince", () => {
+  it("parses days", () => {
+    expect(parseSince("7d")).toEqual({ n: 7, unit: "d" });
+  });
+
+  it("parses weeks", () => {
+    expect(parseSince("2w")).toEqual({ n: 2, unit: "w" });
+  });
+
+  it("parses months", () => {
+    expect(parseSince("1m")).toEqual({ n: 1, unit: "m" });
+  });
+
+  it("rejects zero", () => {
+    expect(parseSince("0d")).toBeNull();
+  });
+
+  it("rejects missing unit", () => {
+    expect(parseSince("7")).toBeNull();
+  });
+
+  it("rejects unknown unit", () => {
+    expect(parseSince("7y")).toBeNull();
+  });
+
+  it("rejects negative", () => {
+    expect(parseSince("-1d")).toBeNull();
+  });
+
+  it("rejects garbage", () => {
+    expect(parseSince("abc")).toBeNull();
+  });
+});
+
+describe("computeStartDate", () => {
+  it("subtracts days", () => {
+    expect(computeStartDate("2026-04-15", { n: 7, unit: "d" })).toBe("2026-04-08");
+  });
+
+  it("subtracts weeks", () => {
+    expect(computeStartDate("2026-04-15", { n: 2, unit: "w" })).toBe("2026-04-01");
+  });
+
+  it("subtracts months", () => {
+    expect(computeStartDate("2026-04-15", { n: 1, unit: "m" })).toBe("2026-03-15");
+  });
+
+  it("crosses year boundary", () => {
+    expect(computeStartDate("2026-01-05", { n: 7, unit: "d" })).toBe("2025-12-29");
+  });
+});
+
+describe("dateRange", () => {
+  it("returns a single day when start equals end", () => {
+    expect(dateRange("2026-04-15", "2026-04-15")).toEqual(["2026-04-15"]);
+  });
+
+  it("returns inclusive range across days", () => {
+    expect(dateRange("2026-04-13", "2026-04-15")).toEqual([
+      "2026-04-13",
+      "2026-04-14",
+      "2026-04-15",
+    ]);
+  });
+
+  it("crosses month boundary", () => {
+    expect(dateRange("2026-03-30", "2026-04-02")).toEqual([
+      "2026-03-30",
+      "2026-03-31",
+      "2026-04-01",
+      "2026-04-02",
+    ]);
+  });
+
+  it("returns empty array when start is after end", () => {
+    expect(dateRange("2026-04-15", "2026-04-10")).toEqual([]);
   });
 });
 

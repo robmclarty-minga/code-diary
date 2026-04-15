@@ -58,41 +58,41 @@ describe("loadSettings", () => {
 });
 describe("resolveArgs", () => {
     it("uses CLI repos when provided", () => {
-        const cli = { repoPaths: ["/cli-repo"], date: "2026-03-30", outputDir: undefined };
+        const cli = { repoPaths: ["/cli-repo"], date: "2026-03-30", outputDir: undefined, since: undefined };
         const settings = { repos: ["/config-repo"] };
         const resolved = resolveArgs(cli, settings);
         expect(resolved.repoPaths).toEqual(["/cli-repo"]);
     });
     it("falls back to config repos when CLI repos empty", () => {
-        const cli = { repoPaths: [], date: "2026-03-30", outputDir: undefined };
+        const cli = { repoPaths: [], date: "2026-03-30", outputDir: undefined, since: undefined };
         const settings = { repos: ["/config-repo1", "/config-repo2"] };
         const resolved = resolveArgs(cli, settings);
         expect(resolved.repoPaths).toEqual(["/config-repo1", "/config-repo2"]);
     });
     it("returns empty repos when neither CLI nor config provides them", () => {
-        const cli = { repoPaths: [], date: "2026-03-30", outputDir: undefined };
+        const cli = { repoPaths: [], date: "2026-03-30", outputDir: undefined, since: undefined };
         const resolved = resolveArgs(cli, {});
         expect(resolved.repoPaths).toEqual([]);
     });
     it("uses CLI outputDir when provided", () => {
-        const cli = { repoPaths: ["/repo"], date: "2026-03-30", outputDir: "/cli-out" };
+        const cli = { repoPaths: ["/repo"], date: "2026-03-30", outputDir: "/cli-out", since: undefined };
         const settings = { "output-dir": "/config-out" };
         const resolved = resolveArgs(cli, settings);
         expect(resolved.outputDir).toBe("/cli-out");
     });
     it("falls back to config output-dir when CLI outputDir is undefined", () => {
-        const cli = { repoPaths: ["/repo"], date: "2026-03-30", outputDir: undefined };
+        const cli = { repoPaths: ["/repo"], date: "2026-03-30", outputDir: undefined, since: undefined };
         const settings = { "output-dir": "/config-out" };
         const resolved = resolveArgs(cli, settings);
         expect(resolved.outputDir).toBe("/config-out");
     });
     it("falls back to cwd when both CLI and config outputDir are missing", () => {
-        const cli = { repoPaths: ["/repo"], date: "2026-03-30", outputDir: undefined };
+        const cli = { repoPaths: ["/repo"], date: "2026-03-30", outputDir: undefined, since: undefined };
         const resolved = resolveArgs(cli, {});
         expect(resolved.outputDir).toBe(process.cwd());
     });
     it("preserves date from CLI args", () => {
-        const cli = { repoPaths: ["/repo"], date: "2026-04-15", outputDir: undefined };
+        const cli = { repoPaths: ["/repo"], date: "2026-04-15", outputDir: undefined, since: undefined };
         const resolved = resolveArgs(cli, {});
         expect(resolved.date).toBe("2026-04-15");
     });

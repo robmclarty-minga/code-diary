@@ -40,6 +40,7 @@ export type CliArgs = {
     repoPaths: string[];
     date: string;
     outputDir: string | undefined;
+    since: string | undefined;
 };
 export type Settings = {
     "output-dir"?: string;
