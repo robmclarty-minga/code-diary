@@ -19,15 +19,8 @@ effort: medium
 **Working tree:**
 !`git status --porcelain`
 
-**Commits since last release:**
-```!
-PREV=$(git log --extended-regexp --format="%H" --grep="^v[0-9]+\.[0-9]+\.[0-9]+$" | head -1)
-if [ -z "$PREV" ]; then
-  git log --format="%s" --reverse
-else
-  git log "$PREV..HEAD" --format="%s" --reverse
-fi
-```
+**Recent commits (hash + subject):**
+!`git log -50 --format="%H %s" --reverse`
 
 **CHANGELOG.md header:**
 !`head -30 CHANGELOG.md 2>/dev/null || echo "NO_CHANGELOG"`
@@ -44,8 +37,11 @@ fi
 
 - If **Working tree** is non-empty, STOP — tell the user to commit or stash first.
 - If **Current version** failed, there is no `package.json` — stop.
-- If **Commits since last release** is empty, tell the user there are no changes
-  to release. Do not proceed.
+- Identify commits since the last release by finding the **Previous release
+  commit** hash in **Recent commits**. All commits after that hash are new.
+  If there is no previous release, all commits are new.
+- If there are no new commits, tell the user there are no changes to release.
+  Do not proceed.
 
 ### 2. Compute next version
 
