@@ -7,14 +7,22 @@ import {
   findDailyFiles,
   getMonthWeeks,
   getMonths,
+  getYears,
   buildSummaryTable,
   buildAuthorTable,
   collectTilItems,
   formatWeeklyReport,
   formatMonthlyReport,
+  formatYearlyReport,
   generateReports,
+  generateYearlyReports,
 } from "../aggregate.js";
-import type { ParsedDiaryDay, WeekDescriptor } from "../types/aggregate.js";
+import { existsSync, readFileSync } from "fs";
+import type {
+  ParsedDiaryDay,
+  WeekDescriptor,
+  YearDescriptor,
+} from "../types/aggregate.js";
 
 const makeDayEntry = (overrides: Partial<ParsedDiaryDay> = {}): ParsedDiaryDay => ({
   date: "2026-03-10",
@@ -238,6 +246,98 @@ describe("formatMonthlyReport", () => {
     const days = [makeDayEntry({ date: "2026-03-10", authors: [] })];
     const report = formatMonthlyReport("2026-03", days);
     expect(report).not.toContain("## Authors");
+  });
+});
+
+describe("getYears", () => {
+  it("returns one year for a same-year range", () => {
+    const years = getYears("2026-01-05", "2026-11-20");
+    expect(years).toHaveLength(1);
+    expect(years[0]!.year).toBe("2026");
+    expect(years[0]!.from).toBe("2026-01-01");
+    expect(years[0]!.to).toBe("2026-12-31");
+  });
+
+  it("spans multiple years inclusive", () => {
+    const years = getYears("2024-06-01", "2026-02-15");
+    expect(years.map((y) => y.year)).toEqual(["2024", "2025", "2026"]);
+  });
+});
+
+describe("formatYearlyReport", () => {
+  const year: YearDescriptor = {
+    year: "2026",
+    from: "2026-01-01",
+    to: "2026-12-31",
+  };
+
+  it("includes header, summary, and monthly breakdown", () => {
+    const days = [
+      makeDayEntry({ date: "2026-03-10" }),
+      makeDayEntry({ date: "2026-05-04" }),
+    ];
+    const report = formatYearlyReport(year, days);
+
+    expect(report).toContain("# Yearly Report — 2026");
+    expect(report).toContain("## Summary");
+    expect(report).toContain("## Monthly Breakdown");
+    expect(report).toContain("**2026-03**");
+    expect(report).toContain("**2026-05**");
+  });
+
+  it("skips months with no activity in the breakdown", () => {
+    const days = [makeDayEntry({ date: "2026-06-10" })];
+    const report = formatYearlyReport(year, days);
+    expect(report).toContain("**2026-06**");
+    expect(report).not.toContain("**2026-01**");
+    expect(report).not.toContain("**2026-12**");
+  });
+
+  it("includes Authors section when author data is present", () => {
+    const days = [
+      makeDayEntry({
+        date: "2026-03-10",
+        authors: [{ name: "Jane Dev", commits: 5, insertions: 30, deletions: 7 }],
+      }),
+    ];
+    const report = formatYearlyReport(year, days);
+    expect(report).toContain("## Authors");
+    expect(report).toContain("| Jane Dev | 5 | 30 | 7 |");
+  });
+});
+
+describe("generateYearlyReports", () => {
+  it("writes a yearly report file per year with data", () => {
+    const dir = getTmpDir();
+    const days = [
+      makeDayEntry({ date: "2025-11-10" }),
+      makeDayEntry({ date: "2026-02-15" }),
+    ];
+
+    const { yearlyCount } = generateYearlyReports(dir, days);
+
+    expect(yearlyCount).toBe(2);
+    expect(existsSync(join(dir, "yearly", "code-diary-2025.md"))).toBe(true);
+    expect(existsSync(join(dir, "yearly", "code-diary-2026.md"))).toBe(true);
+    const content2025 = readFileSync(join(dir, "yearly", "code-diary-2025.md"), "utf8");
+    expect(content2025).toContain("# Yearly Report — 2025");
+  });
+
+  it("returns zero when no days provided", () => {
+    const dir = getTmpDir();
+    const { yearlyCount } = generateYearlyReports(dir, []);
+    expect(yearlyCount).toBe(0);
+  });
+
+  it("skips years with no data even within range", () => {
+    const dir = getTmpDir();
+    const days = [
+      makeDayEntry({ date: "2024-05-01" }),
+      makeDayEntry({ date: "2026-07-01" }),
+    ];
+    const { yearlyCount } = generateYearlyReports(dir, days);
+    expect(yearlyCount).toBe(2);
+    expect(existsSync(join(dir, "yearly", "code-diary-2025.md"))).toBe(false);
   });
 });
 
