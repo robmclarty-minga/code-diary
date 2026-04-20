@@ -20,6 +20,7 @@ const makeDayEntry = (overrides: Partial<ParsedDiaryDay> = {}): ParsedDiaryDay =
   rawMarkdown: "## 2026-03-10\n\n### my-repo\n\n- `abc1234` feat: add thing — feat (+5 / -1)\n\n---\n",
   repos: [{ name: "my-repo", commitCount: 1, categories: { feat: 1 } }],
   tilItems: [],
+  authors: [],
   ...overrides,
 });
 

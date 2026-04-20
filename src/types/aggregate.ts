@@ -10,11 +10,19 @@ export type RepoSection = {
   categories: Record<string, number>;
 };
 
+export type AuthorSummary = {
+  name: string;
+  commits: number;
+  insertions: number;
+  deletions: number;
+};
+
 export type ParsedDiaryDay = {
   date: string;
   rawMarkdown: string;
   repos: RepoSection[];
   tilItems: string[];
+  authors: AuthorSummary[];
 };
 
 export type WeekDescriptor = {

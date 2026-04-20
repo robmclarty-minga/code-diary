@@ -1,6 +1,10 @@
 import { join } from "path";
 import { readdirSync } from "fs";
-import type { ParsedDiaryDay, WeekDescriptor } from "./types/aggregate.js";
+import type {
+  AuthorSummary,
+  ParsedDiaryDay,
+  WeekDescriptor,
+} from "./types/aggregate.js";
 import { fileExists, writeFile } from "./fileIO.js";
 
 export const findDailyFiles = (dailyDir: string): string[] => {
@@ -98,6 +102,37 @@ export const buildSummaryTable = (days: ParsedDiaryDay[]): string => {
   return [header, divider, ...rows].join("\n");
 };
 
+export const buildAuthorTable = (days: ParsedDiaryDay[]): string => {
+  const totals = new Map<string, AuthorSummary>();
+
+  for (const day of days) {
+    for (const author of day.authors) {
+      let entry = totals.get(author.name);
+      if (!entry) {
+        entry = { name: author.name, commits: 0, insertions: 0, deletions: 0 };
+        totals.set(author.name, entry);
+      }
+      entry.commits += author.commits;
+      entry.insertions += author.insertions;
+      entry.deletions += author.deletions;
+    }
+  }
+
+  if (totals.size === 0) {
+    return "";
+  }
+
+  const header = "| Author | Commits | Insertions | Deletions |";
+  const divider = "|------|------|------|------|";
+  const rows = [...totals.values()]
+    .sort((a, b) => b.commits - a.commits)
+    .map(
+      (a) => `| ${a.name} | ${a.commits} | ${a.insertions} | ${a.deletions} |`,
+    );
+
+  return [header, divider, ...rows].join("\n");
+};
+
 export const collectTilItems = (days: ParsedDiaryDay[]): string[] => {
   const items: string[] = [];
   for (const day of days) {
@@ -119,6 +154,11 @@ export const formatWeeklyReport = (week: WeekDescriptor, days: ParsedDiaryDay[])
   const table = buildSummaryTable(days);
   if (table) {
     lines.push(table, "");
+  }
+
+  const authorTable = buildAuthorTable(days);
+  if (authorTable) {
+    lines.push("## Authors", "", authorTable, "");
   }
 
   const tilItems = collectTilItems(days);
@@ -151,6 +191,11 @@ export const formatMonthlyReport = (month: string, days: ParsedDiaryDay[]): stri
   const table = buildSummaryTable(days);
   if (table) {
     lines.push(table, "");
+  }
+
+  const authorTable = buildAuthorTable(days);
+  if (authorTable) {
+    lines.push("## Authors", "", authorTable, "");
   }
 
   const tilItems = collectTilItems(days);
