@@ -16,7 +16,7 @@ const makeCommit = (overrides: Partial<CategorizedCommit> = {}): CategorizedComm
   sha: "abc1234567890abcdef1234567890abcdef12345",
   subject: "feat: add something",
   body: "",
-  author: "Test Author",
+  author: { name: "Test Author", email: "test@example.com" },
   timestamp: new Date("2026-03-30T10:00:00Z"),
   rawTimestamp: "2026-03-30 10:00:00 +0000",
   filesChanged: [],

@@ -4,11 +4,16 @@ export type FileStat = {
   deletions: number;
 };
 
+export type Author = {
+  name: string;
+  email: string;
+};
+
 export type Commit = {
   sha: string;
   subject: string;
   body: string;
-  author: string;
+  author: Author;
   timestamp: Date;
   rawTimestamp: string;
   filesChanged: FileStat[];

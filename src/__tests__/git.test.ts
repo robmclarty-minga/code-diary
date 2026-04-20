@@ -49,7 +49,7 @@ describe("parseGitLog", () => {
     expect(commits[0]!.body).toBe(
       "TIL: JWT tokens need to be rotated periodically",
     );
-    expect(commits[0]!.author).toBe("Jane Dev");
+    expect(commits[0]!.author.name).toBe("Jane Dev");
     expect(commits[0]!.timestamp).toEqual(new Date("2026-03-30 10:00:00 +0000"));
 
     expect(commits[1]!.sha).toBe(
@@ -58,13 +58,13 @@ describe("parseGitLog", () => {
     expect(commits[1]!.subject).toBe(
       "fix(parser): handle edge case in date parsing",
     );
-    expect(commits[1]!.author).toBe("John Coder");
+    expect(commits[1]!.author.name).toBe("John Coder");
 
     expect(commits[2]!.sha).toBe(
       "789abcdef1234567890abcdef1234567890abcde",
     );
     expect(commits[2]!.subject).toBe("update README with new examples");
-    expect(commits[2]!.author).toBe("Jane Dev");
+    expect(commits[2]!.author.name).toBe("Jane Dev");
   });
 
   it("returns empty array for empty string", () => {

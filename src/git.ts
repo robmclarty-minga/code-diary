@@ -138,7 +138,7 @@ export const parseGitLog = (raw: string): Commit[] => {
       );
     }
 
-    const author = afterBodyLines[0]!.trim();
+    const author = { name: afterBodyLines[0]!.trim(), email: "" };
     const rawTimestamp = afterBodyLines[1]!.trim();
     const timestamp = new Date(rawTimestamp);
 
