@@ -2,6 +2,7 @@ import { join } from "path";
 import { readdirSync } from "fs";
 import type { ParsedDiaryDay, WeekDescriptor } from "./types/aggregate.js";
 import { fileExists, writeFile } from "./fileIO.js";
+import { sortByDateDesc } from "./util.js";
 
 export const findDailyFiles = (dailyDir: string): string[] => {
   if (!fileExists(dailyDir)) {
@@ -132,7 +133,7 @@ export const formatWeeklyReport = (week: WeekDescriptor, days: ParsedDiaryDay[])
 
   lines.push("## Daily Entries", "");
 
-  const reversed = [...days].sort((a, b) => b.date.localeCompare(a.date));
+  const reversed = sortByDateDesc(days);
   for (const day of reversed) {
     lines.push(day.rawMarkdown.trimEnd(), "");
   }
@@ -164,7 +165,7 @@ export const formatMonthlyReport = (month: string, days: ParsedDiaryDay[]): stri
 
   lines.push("## Daily Entries", "");
 
-  const reversed = [...days].sort((a, b) => b.date.localeCompare(a.date));
+  const reversed = sortByDateDesc(days);
   for (const day of reversed) {
     lines.push(day.rawMarkdown.trimEnd(), "");
   }
