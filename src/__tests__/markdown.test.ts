@@ -5,6 +5,7 @@ import {
   extractRepoSections,
   extractExistingTilItems,
   mergeDailyContent,
+  collectAuthorTotals,
 } from "../markdown.js";
 import type {
   DiaryEntry,
@@ -165,6 +166,134 @@ describe("formatDiaryEntry", () => {
   });
 });
 
+describe("collectAuthorTotals", () => {
+  it("sums commits and line counts per author across repos", () => {
+    const jane = { name: "Jane Dev", email: "jane@example.com" };
+    const john = { name: "John Coder", email: "john@example.com" };
+    const repos = [
+      {
+        repoPath: "/repos/api",
+        repoName: "api",
+        commits: [
+          makeCommit({ author: jane, insertions: 5, deletions: 1 }),
+          makeCommit({ author: john, insertions: 2, deletions: 2 }),
+        ],
+      },
+      {
+        repoPath: "/repos/web",
+        repoName: "web",
+        commits: [
+          makeCommit({ author: jane, insertions: 7, deletions: 3 }),
+        ],
+      },
+    ];
+
+    const totals = collectAuthorTotals(repos);
+
+    expect(totals).toHaveLength(2);
+    expect(totals[0]).toEqual({
+      name: "Jane Dev",
+      commits: 2,
+      insertions: 12,
+      deletions: 4,
+    });
+    expect(totals[1]).toEqual({
+      name: "John Coder",
+      commits: 1,
+      insertions: 2,
+      deletions: 2,
+    });
+  });
+
+  it("returns empty array for repos with no commits", () => {
+    const repos = [
+      { repoPath: "/repos/api", repoName: "api", commits: [] },
+    ];
+    expect(collectAuthorTotals(repos)).toEqual([]);
+  });
+});
+
+describe("formatDiaryEntry Commits by Author section", () => {
+  const jane = { name: "Jane Dev", email: "jane@example.com" };
+  const john = { name: "John Coder", email: "john@example.com" };
+
+  it("renders Commits by Author section with one line per author", () => {
+    const entry: DiaryEntry = {
+      date: "2026-04-15",
+      repos: [{
+        repoPath: "/repos/api",
+        repoName: "api",
+        commits: [
+          makeCommit({ author: jane, insertions: 10, deletions: 2 }),
+          makeCommit({ author: john, insertions: 4, deletions: 1 }),
+          makeCommit({ author: jane, insertions: 6, deletions: 3 }),
+        ],
+      }],
+      tilItems: [],
+    };
+
+    const result = formatDiaryEntry(entry);
+
+    expect(result).toContain("### Commits by Author");
+    expect(result).toContain("- Jane Dev — 2 commits (+16 / -5)");
+    expect(result).toContain("- John Coder — 1 commit (+4 / -1)");
+  });
+
+  it("orders authors by commit count descending", () => {
+    const entry: DiaryEntry = {
+      date: "2026-04-15",
+      repos: [{
+        repoPath: "/repos/api",
+        repoName: "api",
+        commits: [
+          makeCommit({ author: john }),
+          makeCommit({ author: jane }),
+          makeCommit({ author: jane }),
+        ],
+      }],
+      tilItems: [],
+    };
+
+    const result = formatDiaryEntry(entry);
+    const janeIdx = result.indexOf("Jane Dev");
+    const johnIdx = result.indexOf("John Coder");
+
+    expect(janeIdx).toBeGreaterThan(-1);
+    expect(johnIdx).toBeGreaterThan(-1);
+    expect(janeIdx).toBeLessThan(johnIdx);
+  });
+
+  it("omits the section when there are no commits", () => {
+    const entry: DiaryEntry = {
+      date: "2026-04-15",
+      repos: [{ repoPath: "/repos/empty", repoName: "empty", commits: [] }],
+      tilItems: [],
+    };
+    expect(formatDiaryEntry(entry)).toBe("");
+  });
+
+  it("places Commits by Author after Today I Learned and before repo sections", () => {
+    const entry: DiaryEntry = {
+      date: "2026-04-15",
+      repos: [{
+        repoPath: "/repos/api",
+        repoName: "api",
+        commits: [makeCommit({ author: jane })],
+      }],
+      tilItems: [{ text: "something cool", sha: "abc1234", repoName: "api" }],
+    };
+
+    const result = formatDiaryEntry(entry);
+    const tilIdx = result.indexOf("### Today I Learned");
+    const authorIdx = result.indexOf("### Commits by Author");
+    const repoIdx = result.indexOf("### api");
+
+    expect(tilIdx).toBeGreaterThan(-1);
+    expect(authorIdx).toBeGreaterThan(tilIdx);
+    expect(repoIdx).toBeGreaterThan(authorIdx);
+  });
+});
+
 describe("formatDailyFile", () => {
   it("wraps entry markdown with date-based header", () => {
     const entry = "## 2026-03-30\n\n### my-project\n\n- `abc1234` feat: add — feat (+1 / -0)\n\n---\n";
@@ -219,6 +348,29 @@ describe("extractRepoSections", () => {
   it("excludes Today I Learned heading", () => {
     const sections = extractRepoSections(EXISTING_DAILY);
     expect(sections.has("Today I Learned")).toBe(false);
+  });
+
+  it("excludes Commits by Author heading", () => {
+    const withAuthor = [
+      "# Code Diary — 2026-04-15",
+      "",
+      "## 2026-04-15",
+      "",
+      "### Commits by Author",
+      "",
+      "- Jane Dev — 1 commit (+5 / -1)",
+      "",
+      "### api",
+      "",
+      "- `abc1234` feat: add thing — feat (+5 / -1)",
+      "",
+      "---",
+      "",
+    ].join("\n");
+
+    const sections = extractRepoSections(withAuthor);
+    expect(sections.has("Commits by Author")).toBe(false);
+    expect(sections.has("api")).toBe(true);
   });
 
   it("returns empty map for content with no repo sections", () => {
