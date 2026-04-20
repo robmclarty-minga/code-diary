@@ -8,6 +8,7 @@ import {
   getMonthWeeks,
   getMonths,
   buildSummaryTable,
+  buildAuthorTable,
   collectTilItems,
   formatWeeklyReport,
   formatMonthlyReport,
@@ -125,6 +126,53 @@ describe("buildSummaryTable", () => {
   });
 });
 
+describe("buildAuthorTable", () => {
+  it("sums commits and line counts per author across days", () => {
+    const days = [
+      makeDayEntry({
+        authors: [
+          { name: "Jane Dev", commits: 2, insertions: 10, deletions: 3 },
+          { name: "John Coder", commits: 1, insertions: 4, deletions: 1 },
+        ],
+      }),
+      makeDayEntry({
+        authors: [
+          { name: "Jane Dev", commits: 1, insertions: 5, deletions: 2 },
+        ],
+      }),
+    ];
+
+    const table = buildAuthorTable(days);
+
+    expect(table).toContain("| Author | Commits | Insertions | Deletions |");
+    expect(table).toContain("| Jane Dev | 3 | 15 | 5 |");
+    expect(table).toContain("| John Coder | 1 | 4 | 1 |");
+  });
+
+  it("orders rows by commit count descending", () => {
+    const days = [
+      makeDayEntry({
+        authors: [
+          { name: "Alice", commits: 1, insertions: 1, deletions: 0 },
+          { name: "Bob", commits: 5, insertions: 10, deletions: 2 },
+        ],
+      }),
+    ];
+
+    const table = buildAuthorTable(days);
+    const bobIdx = table.indexOf("| Bob |");
+    const aliceIdx = table.indexOf("| Alice |");
+    expect(bobIdx).toBeGreaterThan(-1);
+    expect(aliceIdx).toBeGreaterThan(-1);
+    expect(bobIdx).toBeLessThan(aliceIdx);
+  });
+
+  it("returns empty string when no author data", () => {
+    expect(buildAuthorTable([])).toBe("");
+    expect(buildAuthorTable([makeDayEntry({ authors: [] })])).toBe("");
+  });
+});
+
 describe("collectTilItems", () => {
   it("collects TIL items from all days", () => {
     const days = [
@@ -172,6 +220,24 @@ describe("formatMonthlyReport", () => {
     expect(report).toContain("# Monthly Report — 2026-03");
     expect(report).toContain("## Summary");
     expect(report).toContain("## Daily Entries");
+  });
+
+  it("includes Authors section when author data is present", () => {
+    const days = [
+      makeDayEntry({
+        date: "2026-03-10",
+        authors: [{ name: "Jane Dev", commits: 2, insertions: 8, deletions: 1 }],
+      }),
+    ];
+    const report = formatMonthlyReport("2026-03", days);
+    expect(report).toContain("## Authors");
+    expect(report).toContain("| Jane Dev | 2 | 8 | 1 |");
+  });
+
+  it("omits Authors section when no author data", () => {
+    const days = [makeDayEntry({ date: "2026-03-10", authors: [] })];
+    const report = formatMonthlyReport("2026-03", days);
+    expect(report).not.toContain("## Authors");
   });
 });
 

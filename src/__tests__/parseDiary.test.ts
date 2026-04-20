@@ -66,6 +66,46 @@ describe("parseDailyFile", () => {
     expect(result.date).toBe("");
     expect(result.repos).toEqual([]);
     expect(result.tilItems).toEqual([]);
+    expect(result.authors).toEqual([]);
+  });
+
+  it("extracts authors from Commits by Author section", () => {
+    const content = `# Code Diary — 2026-04-15
+
+## 2026-04-15
+
+### Commits by Author
+
+- Jane Dev — 2 commits (+16 / -5)
+- John Coder — 1 commit (+4 / -1)
+
+### api
+
+- \`abc1234\` feat: add thing — feat (+16 / -5)
+
+---
+`;
+    const result = parseDailyFile(content);
+
+    expect(result.authors).toEqual([
+      { name: "Jane Dev", commits: 2, insertions: 16, deletions: 5 },
+      { name: "John Coder", commits: 1, insertions: 4, deletions: 1 },
+    ]);
+  });
+
+  it("returns empty authors array when section is missing", () => {
+    const content = `# Code Diary — 2026-04-15
+
+## 2026-04-15
+
+### api
+
+- \`abc1234\` feat: add thing — feat (+1 / -0)
+
+---
+`;
+    const result = parseDailyFile(content);
+    expect(result.authors).toEqual([]);
   });
 });
 
