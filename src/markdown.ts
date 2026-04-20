@@ -1,4 +1,34 @@
-import type { DiaryEntry, TilItem } from "./types/diary.js";
+import type { DiaryEntry, TilItem, RepoEntry } from "./types/diary.js";
+
+type AuthorTotals = {
+  name: string;
+  commits: number;
+  insertions: number;
+  deletions: number;
+};
+
+export const collectAuthorTotals = (repos: RepoEntry[]): AuthorTotals[] => {
+  const byName = new Map<string, AuthorTotals>();
+  for (const repo of repos) {
+    for (const commit of repo.commits) {
+      const key = commit.author.name;
+      let totals = byName.get(key);
+      if (!totals) {
+        totals = { name: key, commits: 0, insertions: 0, deletions: 0 };
+        byName.set(key, totals);
+      }
+      totals.commits += 1;
+      totals.insertions += commit.insertions;
+      totals.deletions += commit.deletions;
+    }
+  }
+  return [...byName.values()].sort((a, b) => b.commits - a.commits);
+};
+
+const formatAuthorLine = (totals: AuthorTotals): string => {
+  const label = totals.commits === 1 ? "commit" : "commits";
+  return `- ${totals.name} — ${totals.commits} ${label} (+${totals.insertions} / -${totals.deletions})`;
+};
 
 export const formatDiaryEntry = (entry: DiaryEntry): string => {
   const hasCommits = entry.repos.some((r) => r.commits.length > 0);
@@ -12,6 +42,15 @@ export const formatDiaryEntry = (entry: DiaryEntry): string => {
     lines.push("### Today I Learned");
     for (const til of entry.tilItems) {
       lines.push(`- ${til.text} (\`${til.sha}\`, ${til.repoName})`);
+    }
+    lines.push("");
+  }
+
+  const authorTotals = collectAuthorTotals(entry.repos);
+  if (authorTotals.length > 0) {
+    lines.push("### Commits by Author", "");
+    for (const totals of authorTotals) {
+      lines.push(formatAuthorLine(totals));
     }
     lines.push("");
   }
@@ -53,6 +92,8 @@ const trimTrailingBlanks = (lines: string[]): string => {
   return lines.slice(0, end).join("\n");
 };
 
+const RESERVED_SECTIONS = new Set(["Today I Learned", "Commits by Author"]);
+
 export const extractRepoSections = (content: string): Map<string, string> => {
   const sections = new Map<string, string>();
   const lines = content.split("\n");
@@ -62,7 +103,7 @@ export const extractRepoSections = (content: string): Map<string, string> => {
   for (const line of lines) {
     const match = line.match(REPO_HEADING_RE);
 
-    if (match && match[1] !== "Today I Learned") {
+    if (match && !RESERVED_SECTIONS.has(match[1]!)) {
       if (currentRepo) {
         sections.set(currentRepo, trimTrailingBlanks(currentLines));
       }
@@ -71,7 +112,7 @@ export const extractRepoSections = (content: string): Map<string, string> => {
       continue;
     }
 
-    if (currentRepo && (line === "---" || (match && match[1] === "Today I Learned"))) {
+    if (currentRepo && (line === "---" || (match && RESERVED_SECTIONS.has(match[1]!)))) {
       sections.set(currentRepo, trimTrailingBlanks(currentLines));
       currentRepo = null;
       currentLines = [];
