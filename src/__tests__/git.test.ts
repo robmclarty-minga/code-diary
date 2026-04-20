@@ -11,6 +11,7 @@ const fixture = [
   `TIL: JWT tokens need to be rotated periodically`,
   `${BEND}`,
   "Jane Dev",
+  "jane@example.com",
   "2026-03-30 10:00:00 +0000",
   " src/auth.ts | 10 +++++++---",
   " src/utils.ts | 2 ++",
@@ -23,6 +24,7 @@ const fixture = [
   "Fixed a bug where dates with single-digit months were not parsed correctly.",
   `${BEND}`,
   "John Coder",
+  "john@example.com",
   "2026-03-30 14:30:00 +0530",
   " src/parser.ts | 5 +++--",
   " 1 file changed, 3 insertions(+), 2 deletions(-)",
@@ -32,6 +34,7 @@ const fixture = [
   "update README with new examples",
   `${BEND}`,
   "Jane Dev",
+  "jane@example.com",
   "2026-03-30 22:00:00 +0000",
   " README.md | 20 +++++++++++++++++---",
   " 1 file changed, 17 insertions(+), 3 deletions(-)",
@@ -50,6 +53,7 @@ describe("parseGitLog", () => {
       "TIL: JWT tokens need to be rotated periodically",
     );
     expect(commits[0]!.author.name).toBe("Jane Dev");
+    expect(commits[0]!.author.email).toBe("jane@example.com");
     expect(commits[0]!.timestamp).toEqual(new Date("2026-03-30 10:00:00 +0000"));
 
     expect(commits[1]!.sha).toBe(
@@ -59,6 +63,7 @@ describe("parseGitLog", () => {
       "fix(parser): handle edge case in date parsing",
     );
     expect(commits[1]!.author.name).toBe("John Coder");
+    expect(commits[1]!.author.email).toBe("john@example.com");
 
     expect(commits[2]!.sha).toBe(
       "789abcdef1234567890abcdef1234567890abcde",
@@ -149,6 +154,7 @@ describe("parseGitLog", () => {
       "Moves ---COMMIT--- from the end and adds ---BODY_END--- markers.",
       `${BEND}`,
       "Dev Person",
+      "dev@example.com",
       "2026-03-30 10:00:00 +0000",
       " src/git.ts | 2 +-",
       " 1 file changed, 1 insertion(+), 1 deletion(-)",

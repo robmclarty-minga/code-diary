@@ -5,7 +5,7 @@ const COMMIT_SEPARATOR = "\0\0COMMIT\0\0";
 const BODY_END_MARKER = "\0\0BODY_END\0\0";
 const GIT_FORMAT_SEPARATOR = "%x00%x00COMMIT%x00%x00";
 const GIT_FORMAT_BODY_END = "%x00%x00BODY_END%x00%x00";
-const GIT_FORMAT = `%H%n%s%n%b${GIT_FORMAT_BODY_END}%n%an%n%ai`;
+const GIT_FORMAT = `%H%n%s%n%b${GIT_FORMAT_BODY_END}%n%an%n%ae%n%ai`;
 
 export const readGitLog = (
   repoPath: string,
@@ -132,14 +132,17 @@ export const parseGitLog = (raw: string): Commit[] => {
       .map((l) => l.trimEnd())
       .filter((l) => l.length > 0);
 
-    if (afterBodyLines.length < 2) {
+    if (afterBodyLines.length < 3) {
       throw new Error(
-        `Malformed commit block: missing author or timestamp for SHA ${sha}`,
+        `Malformed commit block: missing author, email, or timestamp for SHA ${sha}`,
       );
     }
 
-    const author = { name: afterBodyLines[0]!.trim(), email: "" };
-    const rawTimestamp = afterBodyLines[1]!.trim();
+    const author = {
+      name: afterBodyLines[0]!.trim(),
+      email: afterBodyLines[1]!.trim(),
+    };
+    const rawTimestamp = afterBodyLines[2]!.trim();
     const timestamp = new Date(rawTimestamp);
 
     if (isNaN(timestamp.getTime())) {
@@ -148,7 +151,7 @@ export const parseGitLog = (raw: string): Commit[] => {
       );
     }
 
-    const statLines = afterBodyLines.slice(2);
+    const statLines = afterBodyLines.slice(3);
     const filesChanged: FileStat[] = [];
     let insertions = 0;
     let deletions = 0;
