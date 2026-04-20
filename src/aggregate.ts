@@ -4,6 +4,7 @@ import type {
   AuthorSummary,
   ParsedDiaryDay,
   WeekDescriptor,
+  YearDescriptor,
 } from "./types/aggregate.js";
 import { fileExists, writeFile } from "./fileIO.js";
 
@@ -43,6 +44,23 @@ export const getMonthWeeks = (month: string): WeekDescriptor[] => {
   }
 
   return weeks;
+};
+
+export const getYears = (from: string, to: string): YearDescriptor[] => {
+  const years: YearDescriptor[] = [];
+  const startYear = parseInt(from.slice(0, 4), 10);
+  const endYear = parseInt(to.slice(0, 4), 10);
+
+  for (let y = startYear; y <= endYear; y++) {
+    const yearStr = String(y);
+    years.push({
+      year: yearStr,
+      from: `${yearStr}-01-01`,
+      to: `${yearStr}-12-31`,
+    });
+  }
+
+  return years;
 };
 
 export const getMonths = (from: string, to: string): string[] => {
@@ -215,6 +233,81 @@ export const formatMonthlyReport = (month: string, days: ParsedDiaryDay[]): stri
   }
 
   return lines.join("\n");
+};
+
+export const formatYearlyReport = (
+  year: YearDescriptor,
+  days: ParsedDiaryDay[],
+): string => {
+  const lines: string[] = [
+    `# Yearly Report — ${year.year}`,
+    "",
+    "## Summary",
+    "",
+  ];
+
+  const table = buildSummaryTable(days);
+  if (table) {
+    lines.push(table, "");
+  }
+
+  const authorTable = buildAuthorTable(days);
+  if (authorTable) {
+    lines.push("## Authors", "", authorTable, "");
+  }
+
+  const tilItems = collectTilItems(days);
+  if (tilItems.length > 0) {
+    lines.push("## TIL Items", "");
+    for (const til of tilItems) {
+      lines.push(`- ${til}`);
+    }
+    lines.push("");
+  }
+
+  lines.push("## Monthly Breakdown", "");
+
+  const months = getMonths(year.from, year.to);
+  for (const month of months) {
+    const monthDays = days.filter((d) => d.date.startsWith(month));
+    if (monthDays.length === 0) {
+      continue;
+    }
+    const commitCount = monthDays.reduce(
+      (sum, d) => sum + d.repos.reduce((s, r) => s + r.commitCount, 0),
+      0,
+    );
+    lines.push(`- **${month}** — ${monthDays.length} day(s), ${commitCount} commit(s)`);
+  }
+
+  return lines.join("\n");
+};
+
+export const generateYearlyReports = (
+  diaryDir: string,
+  days: ParsedDiaryDay[],
+): { yearlyCount: number } => {
+  let yearlyCount = 0;
+  if (days.length === 0) {
+    return { yearlyCount };
+  }
+
+  const from = days[0]!.date;
+  const to = days[days.length - 1]!.date;
+  const years = getYears(from, to);
+
+  for (const year of years) {
+    const yearDays = days.filter((d) => d.date.startsWith(year.year));
+    if (yearDays.length === 0) {
+      continue;
+    }
+    const yearPath = join(diaryDir, "yearly", `code-diary-${year.year}.md`);
+    const report = formatYearlyReport(year, yearDays);
+    writeFile(yearPath, report);
+    yearlyCount += 1;
+  }
+
+  return { yearlyCount };
 };
 
 export const generateReports = (

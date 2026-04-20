@@ -32,3 +32,9 @@ export type WeekDescriptor = {
   from: string;
   to: string;
 };
+
+export type YearDescriptor = {
+  year: string;
+  from: string;
+  to: string;
+};
