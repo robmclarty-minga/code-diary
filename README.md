@@ -42,6 +42,7 @@ All artifacts land in your output directory:
   daily/    # code-diary-YYYY-MM-DD.md
   weekly/   # code-diary-YYYY-MM-W#.md
   monthly/  # code-diary-YYYY-MM.md
+  yearly/   # code-diary-YYYY.md (when generated via `aggregate --yearly`)
 ```
 
 ## Backfill
@@ -72,6 +73,7 @@ Running multiple times for the same date is always safe — new commits merge in
 Each daily entry includes:
 
 - **Today I Learned** — items extracted from commit messages containing `TIL:` (e.g., `feat(auth): add OAuth flow TIL: refresh tokens expire separately`)
+- **Commits by Author** — a per-author breakdown of commit counts and line changes across all repos for the day
 - **Per-repo commit lists** — commits sorted chronologically with short SHA, subject, category, and diff stats
 
 Example:
@@ -84,6 +86,10 @@ Example:
 ### Today I Learned
 - refresh tokens expire separately (`a1b2c3d`, my-app)
 
+### Commits by Author
+
+- Jane Dev — 2 commits (+128 / -8)
+
 ### my-app
 - `a1b2c3d` feat(auth): add OAuth flow — feat (+120 / -5)
 - `e4f5g6h` fix(db): connection pool timeout — fix (+8 / -3)
@@ -91,13 +97,13 @@ Example:
 ---
 ```
 
-Weekly and monthly reports aggregate these daily entries into higher-level summaries.
+Weekly, monthly, and yearly reports aggregate these daily entries into higher-level summaries, including an Authors table summing commits and line counts per person across the period.
 
 ## CLI Reference
 
 ```
 code-diary [<repo-path>...] [--date <YYYY-MM-DD>] [--since <N><d|w|m>] [--output <dir>]
-code-diary aggregate [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>] [--output <dir>]
+code-diary aggregate [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>] [--output <dir>] [--yearly]
 ```
 
 | Argument | Description |
@@ -127,6 +133,7 @@ Aggregate runs automatically after each `code-diary` invocation. You can also ru
 ```bash
 code-diary aggregate                                    # regenerate all reports
 code-diary aggregate --from 2025-06-01 --to 2025-06-30  # specific range
+code-diary aggregate --yearly                           # also generate yearly reports
 ```
 
 | Argument | Description |
@@ -134,6 +141,9 @@ code-diary aggregate --from 2025-06-01 --to 2025-06-30  # specific range
 | `--from <YYYY-MM-DD>` | Start date (defaults to earliest diary entry) |
 | `--to <YYYY-MM-DD>` | End date (defaults to today) |
 | `--output <dir>` | Output directory (defaults to config or cwd) |
+| `--yearly` | Also generate yearly reports into `<output>/yearly/` |
+
+Yearly reports include the same per-repo summary and per-author tables as the monthly and weekly outputs, plus a Monthly Breakdown listing which months had activity during the year.
 
 ## Working with AI Agents
 
