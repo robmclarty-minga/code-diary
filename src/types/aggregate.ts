@@ -2,6 +2,7 @@ export type AggregateArgs = {
   diaryDir: string;
   from: string;
   to: string;
+  yearly: boolean;
 };
 
 export type RepoSection = {

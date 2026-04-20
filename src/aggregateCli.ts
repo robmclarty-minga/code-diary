@@ -2,11 +2,15 @@ import { resolve, join } from "path";
 import type { AggregateArgs } from "./types/aggregate.js";
 import { loadSettings, expandTilde } from "./config.js";
 import { isValidDate } from "./cli.js";
-import { findDailyFiles, generateReports } from "./aggregate.js";
+import {
+  findDailyFiles,
+  generateReports,
+  generateYearlyReports,
+} from "./aggregate.js";
 import { parseDailyFile } from "./parseDiary.js";
 import { readFile } from "./fileIO.js";
 
-const AGGREGATE_USAGE = `Usage: code-diary aggregate [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>] [--output <dir>]\n`;
+const AGGREGATE_USAGE = `Usage: code-diary aggregate [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>] [--output <dir>] [--yearly]\n`;
 
 const AGGREGATE_HELP = `Usage: code-diary aggregate [options]
 
@@ -17,12 +21,14 @@ Options:
   --from <YYYY-MM-DD>  Start date (default: earliest diary entry)
   --to <YYYY-MM-DD>    End date (default: today)
   --output <dir>       Diary output directory (default: config or cwd)
+  --yearly             Also generate yearly reports into <output>/yearly/
   -h, --help           Show this help message and exit
 
 Examples:
   code-diary aggregate
   code-diary aggregate --from 2026-03-01 --to 2026-03-31
   code-diary aggregate --output ~/diary
+  code-diary aggregate --yearly
 `;
 
 export const parseAggregateArgs = (argv: string[]): AggregateArgs => {
@@ -30,6 +36,7 @@ export const parseAggregateArgs = (argv: string[]): AggregateArgs => {
   let from: string | undefined;
   let to: string | undefined;
   let outputDir: string | undefined;
+  let yearly = false;
 
   let i = 0;
   while (i < args.length) {
@@ -46,6 +53,9 @@ export const parseAggregateArgs = (argv: string[]): AggregateArgs => {
     } else if (arg === "--output") {
       outputDir = args[i + 1];
       i += 2;
+    } else if (arg === "--yearly") {
+      yearly = true;
+      i += 1;
     } else {
       process.stderr.write(`Unknown argument: ${arg}\n`);
       process.stderr.write(AGGREGATE_USAGE);
@@ -73,12 +83,13 @@ export const parseAggregateArgs = (argv: string[]): AggregateArgs => {
     diaryDir,
     from: from ?? "1970-01-01",
     to: to ?? today,
+    yearly,
   };
 };
 
 export const runAggregate = async (argv: string[]): Promise<void> => {
   const aggArgs = parseAggregateArgs(argv);
-  const { diaryDir, from, to } = aggArgs;
+  const { diaryDir, from, to, yearly } = aggArgs;
 
   const dailyFiles = findDailyFiles(join(diaryDir, "daily"));
   if (dailyFiles.length === 0) {
@@ -99,6 +110,9 @@ export const runAggregate = async (argv: string[]): Promise<void> => {
   days.sort((a, b) => a.date.localeCompare(b.date));
 
   const { weeklyCount, monthlyCount } = generateReports(diaryDir, days);
+  const yearlyCount = yearly
+    ? generateYearlyReports(diaryDir, days).yearlyCount
+    : 0;
 
   const parts: string[] = [];
   if (weeklyCount > 0) {
@@ -107,5 +121,8 @@ export const runAggregate = async (argv: string[]): Promise<void> => {
   if (monthlyCount > 0) {
     parts.push(`${monthlyCount} monthly`);
   }
-  process.stdout.write(`Generated ${parts.join(" and ")} report(s) in ${diaryDir}\n`);
+  if (yearlyCount > 0) {
+    parts.push(`${yearlyCount} yearly`);
+  }
+  process.stdout.write(`Generated ${parts.join(", ")} report(s) in ${diaryDir}\n`);
 };
