@@ -8,6 +8,7 @@ import type {
   DiaryEntry,
   TilItem,
 } from "./types/diary.js";
+import { shortSha, sortByTimestampAsc } from "./util.js";
 
 const CATEGORY_REGEX =
   /^(feat|fix|refactor|docs|chore|test|style|perf|build|ci)(\(.+\))?:/i;
@@ -81,9 +82,7 @@ export const buildRepoEntry = (
   repoPath: string,
   commits: Commit[],
 ): RepoEntry => {
-  const categorized = commits
-    .map(categorizeCommit)
-    .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  const categorized = sortByTimestampAsc(commits.map(categorizeCommit));
 
   return {
     repoPath,
@@ -100,9 +99,7 @@ export const buildDiaryEntry = (
   const tilItems: TilItem[] = [];
 
   for (const repo of repos) {
-    const sorted = [...repo.commits].sort(
-      (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
-    );
+    const sorted = sortByTimestampAsc(repo.commits);
     for (const commit of sorted) {
       for (const text of commit.tilItems) {
         if (!seen.has(text)) {
@@ -110,7 +107,7 @@ export const buildDiaryEntry = (
           tilItems.push({
             text,
             repoName: repo.repoName,
-            sha: commit.sha.slice(0, 7),
+            sha: shortSha(commit.sha),
           });
         }
       }

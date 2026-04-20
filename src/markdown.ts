@@ -1,4 +1,5 @@
 import type { DiaryEntry, TilItem } from "./types/diary.js";
+import { shortSha, sortByTimestampAsc } from "./util.js";
 
 export const formatDiaryEntry = (entry: DiaryEntry): string => {
   const hasCommits = entry.repos.some((r) => r.commits.length > 0);
@@ -21,13 +22,10 @@ export const formatDiaryEntry = (entry: DiaryEntry): string => {
       continue;
     }
     lines.push(`### ${repo.repoName}`, "");
-    const sorted = [...repo.commits].sort(
-      (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
-    );
+    const sorted = sortByTimestampAsc(repo.commits);
     for (const commit of sorted) {
-      const shortSha = commit.sha.slice(0, 7);
       lines.push(
-        `- \`${shortSha}\` ${commit.subject} — ${commit.category} (+${commit.insertions} / -${commit.deletions})`,
+        `- \`${shortSha(commit.sha)}\` ${commit.subject} — ${commit.category} (+${commit.insertions} / -${commit.deletions})`,
       );
     }
     lines.push("");
